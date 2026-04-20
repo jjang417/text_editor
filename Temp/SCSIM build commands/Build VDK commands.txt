@@ -1,0 +1,5 @@
+
+
+
+/usr/bin/env LD_LIBRARY_PATH=/home/tools/synopsys/vdk/X-2025.06u48/SLS/linux/common/libso-gcc-13.3-64:$LD_LIBRARY_PATH NV_BUILD_SKIP_OS_CHECK=1 IGNORE_ATRACE_ERROR=1 CMOD_SYSC_BUILD=vdk NV_BUILD_VDK_TOP=1 QSUB_APPLICATION=r89docker QSUB_OVERRIDE_OS=rel8x QSUB_APPLICATION_DEFAULT=affinity umake -skip build_quality_checks tb500_Linux_x86_64_nv_top4-cmod_gpu_wrapper.build 
+

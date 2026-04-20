@@ -1,0 +1,233 @@
+
+
+https://nvidia.atlassian.net/wiki/spaces/TegraAM/pages/2686622536/TB50x+Cmodel+Branch+-+NET+Releases  
+
+ 
+
+Only Characters highlighted in Red should be changed for each release  
+
+pwa create -branch nvmobile_tb50x_cmod_NET_Rel_1 NET15_clone_tree 
+
+cd NET15_clone_tree 
+
+nvprojectname save . business=mobile chip=tb500 group=arch team=sys 
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/tree.make.suggested 
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/TOT 
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/etc 
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/arch/traces/<path to traces>... → This is where traces will be located in the branch. Only need to do this if modifying test 
+
+pwa sync 
+
+cd hw/nvmobile_tb50x_cmod_NET_Rel_1/ 
+
+Just like in normal pwa genie tree, you will have to "pwa install" the files you want before you can do "p4 edit" and do any changes 
+
+If your changes are already submitted to the main tree at a certain CL, you can use p4 integrate to quickly port over your change with perforce integrate (instructions https://nvidia.atlassian.net/wiki/display/SOCDGRP/Genie+Users+in+Nvmobile#GenieUsersinNvmobile-CanIdointegratesinaGeniePWA)   
+
+If you submitted your changes to main tree at CL 77069321, you can do  
+
+> pwa install --nosync --no-size-limit .source_cache/hw/nvmobile_tb50x_cmod_NET_Rel_2/... 
+
+> p4 integrate -tid //hw/nvmobile_tb50x_cmod/...@77069321,77069321 //hw/nvmobile_tb50x_cmod_NET_Rel_2/... 
+
+> p4 resolve -am ... ; p4 resolve ... 
+
+> pwa sync latest 
+
+> p4 sync ... 
+
+> p4 resolve -am ... ; p4 resolve ... 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[Download NET13 branch and apply HW CL] 
+
+ 
+
+ 
+
+$ rm -rf HW_TREE_NET13_4/ 
+
+$ mkdir HW_TREE_NET13_4/ 
+
+$ cd HW_TREE_NET13_4/ 
+
+$ pwa delete -branch nvmobile_tb50x_cmod_NET_Rel_2 NET13_clone_tree_4 
+
+$ pwa create -branch nvmobile_tb50x_cmod_NET_Rel_2 NET13_clone_tree_4 
+
+$ ls 
+
+$ cd NET13_clone_tree_4/ 
+
+$ nvprojectname save . business=mobile chip=tb500 group=arch team=sys 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/tree.make.suggested 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/TOT 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/etc 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/cmod/... 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/ip/socd/nv_top/4.0/cmod/nv_top/scsim/... 
+
+ 
+
+ 
+
+$ pwa sync 
+
+ 
+
+ 
+
+ 
+
+ 
+
+$ gsim -- tgen_rwmp.pl -arch Linux_x86_64 -target RS_CSIM -chip tb500 --testArgsMore -force_linux_64bit -failOnZeroTests -level as2/tb500/as2_csim_sanity_64.lvl -maxFileSize 100000 -queue o_cpu_32G_15M | & tee build.log 
+
+ 
+
+ 
+
+$ history | grep unshelve 
+
+$ p4 unshelve -s 88633151 
+
+ 
+
+ 
+
+[NET13 HW TREE libs integration] 
+
+ 
+
+ 
+
+> pwa sync 88100700 
+
+> gretrieve -s 89736430 
+
+> gretrieve -s <your changes> 
+
+ 
+
+ 
+
+CL 89736430 currently contains all the patches so far that needed to be built on top of ARMFM 11.26 so that it can be merged into SW.  
+
+ 
+
+ 
+
+I am currently working on reverting the ARMFM 11.29 change in the NET13 tree so that it is easier on users of NET13 tree. For now, you can try the above steps. 
+
+ 
+
+ 
+
+ 
+
+ 
+
+$ rm -rf HW_TREE_NET13_4/ 
+
+$ mkdir HW_TREE_NET13_4/ 
+
+$ cd HW_TREE_NET13_4/ 
+
+$ pwa delete -branch nvmobile_tb50x_cmod_NET_Rel_2 NET13_clone_tree_4 
+
+$ pwa create -branch nvmobile_tb50x_cmod_NET_Rel_2 NET13_clone_tree_4 
+
+$ ls 
+
+$ cd NET13_clone_tree_4/ 
+
+$ nvprojectname save . business=mobile chip=tb500 group=arch team=sys 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/tree.make.suggested 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/TOT 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/etc 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/cmod/... 
+
+$ pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_2/ip/socd/nv_top/4.0/cmod/nv_top/scsim/... 
+
+ 
+
+ 
+
+$ pwa sync 88100700 
+
+$ gretrieve -s 89736430 
+
+$ gretrieve -s 88633151 
+
+ 
+
+ 
+
+$ gsim -- tgen_rwmp.pl -arch Linux_x86_64 -target RS_CSIM -chip tb500 --testArgsMore -force_linux_64bit -failOnZeroTests -level as2/tb500/as2_csim_sanity_64.lvl -maxFileSize 100000 -queue o_cpu_32G_15M | & tee build.log 
+
+ 
+
+ 
+
+[How to submit change to mainline] 
+
+ 
+
+Generally the best process is to merge changes into the mainline tree, then port them to other trees using p4 integrate as much as possible. If your CL is working on a particular tree we can start with that one first. 
+
+  
+
+In whatever tree your changes are, you should run the CSIM sanity command and make sure the tests are passing: 
+
+gsim -- tgen_rwmp.pl -arch Linux_x86_64 -target RS_CSIM -chip tb500 --testArgsMore -force_linux_64bit -failOnZeroTests -level as2/tb500/as2_sc_factory_sanity_64.lvl -maxFileSize 1000000 -queue o_cpu_16G_1H 
+
+  
+
+Then it's a good idea to ask people to review your changes once you know they are working. 
+
+  
+
+In the nvmobile_tb50x_cmod_NET_Rel_<x> trees, you would only then have to use as2 submit to sumbit your changes. 
+
+  
+
+In the mainline tree there are other things that must be done first. 
+
+  
+
+In particular, you'll need 2 upvotes on your review in the mainline tree. 
+
+  
+
+Also, you'll need to run the as2 presubmit command like this first: 
+
+nvrun scsim_as2_pre_checkin_sanity.sh tb500 
+
+  
+
+And then paste the resulting nvregress link from that regression into your CL description before as2 submit'ting. 
+
+ 
+
+as2 submit –c <HW CL> 

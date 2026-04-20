@@ -1,0 +1,72 @@
+
+I use create-L1-guest-image.sh from https://gitlab-master.nvidia.com/tonym/scratch-4gpu-scripts/-/tree/for_joseph?ref_type=heads to create initial Ubuntu disk image 
+
+ 
+ 
+
+[6:16 PM] 
+
+you can do it again 
+
+ 
+ 
+
+Kiran . (SW-GPU)  [6:18 PM] 
+ 
+
+Got it 
+
+ 
+ 
+
+Joseph Jang  [6:19 PM] 
+ 
+
+I change to raw format for Ubuntu disk image by 
+ 
+
+diff --git a/create-L1-guest-image.sh b/create-L1-guest-image.sh 
+index 87a5ffe..c0d75b9 100755 
+ 
+
+--- a/create-L1-guest-image.sh 
+
++++ b/create-L1-guest-image.sh 
+ 
+
+@@ -35,7 +35,7 @@ fi 
+IMAGE_FILE_L1="HGX-L1-GUEST.img" 
+ 
+rm -f $IMAGE_FILE_L1 
+-qemu-img create -f qcow2 $IMAGE_FILE_L1 1T 
+ 
+
++qemu-img create $IMAGE_FILE_L1 10G 
+virt-resize --expand /dev/sda1 $BASE_IMAGE_FILE $IMAGE_FILE_L1 
+ 
+# Create netplan config file - uploaded directly (no guest execution needed) 
+ 
+
+ 
+
+@@ -137,8 +137,8 @@ virt-customize  
+
+-a $IMAGE_FILE_L1 \ 
+ 
+rm -f 01-netcfg.yaml 99-disable-network-config.cfg firstboot-setup.sh 
+ 
+-qemu-img convert -c -O qcow2 HGX-L1-GUEST.img HGX-L1-GUEST.new 
+-mv HGX-L1-GUEST.new HGX-L1-GUEST.img 
+ 
+
++#qemu-img convert -c -O qcow2 HGX-L1-GUEST.img HGX-L1-GUEST.new 
+ 
+
+ 
+
++#mv HGX-L1-GUEST.new HGX-L1-GUEST.img 
+chmod 777 HGX-L1-GUEST.img 
+
+ 
+
+ 

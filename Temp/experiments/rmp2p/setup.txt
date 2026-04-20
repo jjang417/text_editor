@@ -1,0 +1,1195 @@
+$ docker load --input c1g2_docker_img.tgz 
+
+ 
+
+$ docker run -d -it --rm --privileged --name=c1g2_container_01 -v $PWD/custom_config:/root/custom_config -v /boot:/boot:ro -v /lib/modules:/lib/modules:ro -v /localhome/local-jjang/strata_compute-vera_switch/HGX-L1-GUEST.img:/opt/scsim/c1g2/HGX-L1-GUEST.img --ulimit msgqueue=-1:-1 -e CSL="-invalid_xtl_register_access,[disable]csl_grp_host_error_pri_intr,[noabort]assert,[disable]sim_tasker.cpp,[enable;debuglevel:20;flush]chiplib_e,[enable;flush]CPUModel,[enable]MSIX,NVLC,NVLPW," -e GUEST_IP=172.17.0.101 c1g2_docker_img:5.0 --component-id SCSIM_TB500_0 --client-id "GPU_0,GPU_1" --config-paths "/root/custom_config/devproc_gr102_conf_0.json,/root/custom_config/devproc_gr102_conf_1.json" 
+
+ 
+
+ 
+
+For testing: (enable telnet port 1234 and localhost network inside container) 
+
+$ docker run -d -it --rm --privileged --name=c1g2_container_01 -v /localhome/local-jjang/strata_compute-vera_switch/c1g2_auto_run.sh:/opt/scsim/c1g2_auto_run.sh -v $PWD/custom_config:/root/custom_config -v /boot:/boot:ro -v /lib/modules:/lib/modules:ro -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/HGX-L1-GUEST-15G.img:/opt/scsim/c1g2/HGX-L1-GUEST.img --ulimit msgqueue=-1:-1 -e CSL="-invalid_xtl_register_access,[disable]csl_grp_host_error_pri_intr,[noabort]assert,[disable]sim_tasker.cpp,[enable;debuglevel:20;flush]chiplib_e,[enable;flush]CPUModel,[enable]MSIX,NVLC,NVLPW," -p 1234:1234 c1g2_docker_img:latest --component-id SCSIM_TB500_0 --client-id "GPU_0,GPU_1" --config-paths "/root/custom_config/devproc_gr102_conf_0.json,/root/custom_config/devproc_gr102_conf_1.json" 
+
+ 
+
+ 
+
+For GPU loopback mode testing: 
+
+$ docker run -d -it --rm --privileged --name=c1g2_container_01 -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/backup/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.init_vector.dump:/opt/mse_dump/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.init_vector.dump -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/backup/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A2A2A2A2_guid1_A3A3A3A3_standalone_bidir.init_vector.dump:/opt/mse_dump/test_mse_load_guid0_A2A2A2A2_guid1_A3A3A3A3_standalone_bidir.init_vector.dump -v /localhome/local-jjang/strata_compute-vera_switch/c1g2_auto_run.sh:/opt/scsim/c1g2_auto_run.sh -v $PWD/custom_config:/root/custom_config -v /boot:/boot:ro -v /lib/modules:/lib/modules:ro -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/HGX-L1-GUEST-15G.img:/opt/scsim/c1g2/HGX-L1-GUEST.img --ulimit msgqueue=-1:-1 -e CSL="-invalid_xtl_register_access,[disable]csl_grp_host_error_pri_intr,[noabort]assert,[disable]sim_tasker.cpp,[enable;debuglevel:20;flush]chiplib_e,[enable;flush]CPUModel,[enable]MSIX,NVLC,NVLPW," -p 1234:1234 c1g2_docker_img:latest --component-id SCSIM_TB500_0 --client-id "GPU_0,GPU_1" --config-paths "/root/custom_config/devproc_gr102_conf_0.json,/root/custom_config/devproc_gr102_conf_1.json" 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+After Ubuntu OS boot up, you can use telnet to connect into Vera VM 
+
+ 
+
+$ telnet localhost 1234 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+$ sudo bash ~/strata_compute-vera_switch/tap_to_containers_via_docker0.sh c1g2_container_01 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[How to build RM driver on Ubuntu] 
+
+ 
+
+ 
+
+sudo sh NVIDIA-Linux-aarch64-DVS-internal.run -m=kernel --install-libglvnd -sq --no-drm 
+
+ 
+
+ 
+
+ 
+
+ 
+
+sudo -s 
+
+rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio 
+
+ 
+
+ 
+
+No nvlink: 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2' 
+
+ 
+
+ 
+
+Enable nvlink: 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMMaxPCIELinkSpeed=0x5;RmNvlinkControl=0x100;RMNvlinkFirmwarePreloaded=0x1;EnableMSI=0;RmOverrideC2Clinks=0;RMForceNetlistNumber=0x2;RmNvlinkTxTrainControl=0x320008;RMNvLinkMinionSimModeControl=0x1;RMNvLinkMinionControl=0x11000000;RMNvLinkMinionSmfSettings=0x3;RmDisableCtxswUcodeFromChiplib=1;RmPmuBootstrapMode=2;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RMFailOnC2CAbsence=0' 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Commands to load MSE FW: 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+Commands to loaD MSE starter: 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+ 
+
+Combine together: 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A2A2A2A2_guid1_A3A3A3A3_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+ 
+
+ 
+
+nvidia-persistenced -V 
+
+ 
+
+ 
+
+nvidia-smi 
+
+ 
+
+#Run nvidia-persistenced in background: 
+
+ 
+
+ 
+
+File: gpu_setup.sh 
+
+#!/bin/bash 
+
+ 
+
+ 
+
+echo "Starting nvidia-persistenced" 
+
+ 
+
+ 
+
+time nvidia-persistenced -V 
+
+ 
+
+ 
+
+echo "Persistenced completed" 
+
+echo "Starting nvidia-smi now" 
+
+ 
+
+ 
+
+time nvidia-smi -q 
+
+ 
+
+ 
+
+time nvidia-smi topo -m 
+
+ 
+
+ 
+
+time nvidia-smi nvlink -c 
+
+ 
+
+ 
+
+time nvidia-smi nvlink -e 
+
+ 
+
+ 
+
+time nvidia-smi nvlink -gt d 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+echo "SMI completed" 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+use nohup (No Hang UP). This keeps the script running even if you disconnect. 
+
+ 
+
+ 
+
+nohup bash gpu_setup.sh > output.log 2>&1 & 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Run RMP2P test: 
+
+ 
+
+root@ubuntu-L1:/home/nvidia# ./nvlink --gtest_filter="PeerToPeerTest.BaseConfigurationTest/Vidmem" --verbose 
+
+Note: Google Test filter = PeerToPeerTest.BaseConfigurationTest/Vidmem 
+
+[==========] Running 1 test from 1 test suite. 
+
+[----------] Global test environment set-up. 
+
+[----------] 1 test from PeerToPeerTest 
+
+[ RUN      ] PeerToPeerTest.BaseConfigurationTest/Vidmem 
+
+[P2P test] Starting SetUp of PeerToPeerTestBase 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Debug log: 
+
+ 
+
+ 
+
+dmesg -wH > /root/kernel.log& 
+
+  
+
+dmesg -wH 
+
+  
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+#Run nvidia-persistenced in background: 
+
+ 
+
+ 
+
+File: gpu_setup.sh 
+
+#!/bin/bash 
+
+ 
+
+ 
+
+echo "Starting nvidia-persistenced" 
+
+ 
+
+ 
+
+time nvidia-persistenced -V 
+
+ 
+
+ 
+
+echo "Persistenced completed" 
+
+echo "Starting nvidia-smi now" 
+
+ 
+
+ 
+
+time nvidia-smi -q 
+
+ 
+
+ 
+
+echo "SMI completed" 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+use nohup (No Hang UP). This keeps the script running even if you disconnect. 
+
+ 
+
+ 
+
+nohup bash gpu_setup.sh > output.log 2>&1 & 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[ Set SCSIM GPVar enable_gpu_frontdoor_path=0 ] (no need to set enable_gpu_frontdoor_path=0) 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+$ docker run -d -it --rm --privileged --name=c1g2_container_01 -v /localhome/local-jjang/strata_compute-vera_switch/sim_gpvars.py:/opt/scsim/c1g2/simtools/sim_gpvars.py -v $PWD/custom_config:/root/custom_config -v /boot:/boot:ro -v /lib/modules:/lib/modules:ro -v /localhome/local-jjang/strata_compute-vera_switch/HGX-L1-GUEST.img:/opt/scsim/c1g2/HGX-L1-GUEST.img --ulimit msgqueue=-1:-1 -e CSL="-invalid_xtl_register_access,[disable]csl_grp_host_error_pri_intr,[noabort]assert,[disable]sim_tasker.cpp,[enable;debuglevel:20;flush]chiplib_e,[enable;flush]CPUModel,[enable]MSIX,NVLC,NVLPW," -e GUEST_IP=172.17.0.101 c1g2_docker_img:5.0 --component-id SCSIM_TB500_0 --client-id "GPU_0,GPU_1" --config-paths "/root/custom_config/devproc_gr102_conf_0.json,/root/custom_config/devproc_gr102_conf_1.json" 
+
+ 
+
+ 
+
+$ sudo bash ~/strata_compute-vera_switch/tap_to_containers_via_docker0.sh c1g2_container_01 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+sudo -s 
+
+rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio 
+
+ 
+
+ 
+
+ 
+
+ 
+
+No nvlink: 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2' 
+
+ 
+
+ 
+
+Enable nvlink: 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMMaxPCIELinkSpeed=0x5;RmNvlinkControl=0x100;RMNvlinkFirmwarePreloaded=0x1;EnableMSI=0;RmOverrideC2Clinks=0;RMForceNetlistNumber=0x2;RmNvlinkTxTrainControl=0x320008;RMNvLinkMinionSimModeControl=0x1;RMNvLinkMinionControl=0x11000000;RMNvLinkMinionSmfSettings=0x3;RmDisableCtxswUcodeFromChiplib=1;RmPmuBootstrapMode=2' 
+
+ 
+
+ 
+
+Enable nvlink#2: (To try) 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMMaxPCIELinkSpeed=0x5;RmNvlinkControl=0x100;RMNvlinkFirmwarePreloaded=0x1;EnableMSI=0;RmOverrideC2Clinks=0;RMForceNetlistNumber=0x2;RmNvlinkTxTrainControl=0x320008;RMNvLinkMinionSimModeControl=0x1;RMNvLinkMinionControl=0x11000000;RMNvLinkMinionSmfSettings=0x3;RmDisableCtxswUcodeFromChiplib=1;RmPmuBootstrapMode=2;RmOverrideSelfHostedMode=0x1;RmDevinitDmaUseSPA=0x1;RMFailOnC2CAbsence=0' 
+
+ 
+
+ 
+
+Enable nvlink#3: (Able to enable NVLink but take too much time) 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMMaxPCIELinkSpeed=0x5;RmNvlinkControl=0x100;RMNvlinkFirmwarePreloaded=0x1;EnableMSI=0;RmOverrideC2Clinks=0;RMForceNetlistNumber=0x2;RmNvlinkTxTrainControl=0x320008;RMNvLinkMinionSimModeControl=0x1;RMNvLinkMinionControl=0x11000000;RMNvLinkMinionSmfSettings=0x3;RmDisableCtxswUcodeFromChiplib=1;RmPmuBootstrapMode=2;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0' 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Enable nvlink#4: (Works) 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMMaxPCIELinkSpeed=0x5;RmNvlinkControl=0x100;RMNvlinkFirmwarePreloaded=0x1;EnableMSI=0;RmOverrideC2Clinks=0;RMForceNetlistNumber=0x2;RmNvlinkTxTrainControl=0x320008;RMNvLinkMinionSimModeControl=0x1;RMNvLinkMinionControl=0x11000000;RMNvLinkMinionSmfSettings=0x3;RmDisableCtxswUcodeFromChiplib=1;RmPmuBootstrapMode=2;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RMFailOnC2CAbsence=0' 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Debug log: 
+
+ 
+
+ 
+
+dmesg -wH > /root/kernel.log& 
+
+  
+
+dmesg -wH 
+
+  
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+#Run nvidia-persistenced in background: 
+
+ 
+
+ 
+
+File: gpu_setup.sh 
+
+#!/bin/bash 
+
+ 
+
+ 
+
+echo "Starting nvidia-persistenced" 
+
+ 
+
+ 
+
+time nvidia-persistenced -V 
+
+ 
+
+ 
+
+echo "Persistenced completed" 
+
+echo "Starting nvidia-smi now" 
+
+ 
+
+ 
+
+time nvidia-smi -q 
+
+ 
+
+ 
+
+time nvidia-smi topo -m 
+
+ 
+
+ 
+
+time nvidia-smi nvlink -c 
+
+ 
+
+ 
+
+time nvidia-smi nvlink -e 
+
+ 
+
+ 
+
+time nvidia-smi nvlink -gt d 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+echo "SMI completed" 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+use nohup (No Hang UP). This keeps the script running even if you disconnect. 
+
+ 
+
+ 
+
+nohup bash gpu_setup.sh > output.log 2>&1 & 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Commands to load MSE FW: 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+or 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Commands to loaD MSE starter: 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+or 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Combine together: 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+ 
+
+ 
+
+#Run nvidia-persistenced and nvidia-smi in background 
+
+rm -rf output.log 
+
+nohup bash gpu_setup.sh > output.log 2>&1 & 
+
+ 
+
+ 
+
+ 
+
+ 
+
+#Run RMP2P test 
+
+root@ubuntu-L1:/home/nvidia# ./nvlink --gtest_filter="PeerToPeerTest.BaseConfigurationTest/Vidmem" --verbose 
+
+Note: Google Test filter = PeerToPeerTest.BaseConfigurationTest/Vidmem 
+
+[==========] Running 1 test from 1 test suite. 
+
+[----------] Global test environment set-up. 
+
+[----------] 1 test from PeerToPeerTest 
+
+[ RUN      ] PeerToPeerTest.BaseConfigurationTest/Vidmem 
+
+[P2P test] Starting SetUp of PeerToPeerTestBase 
+
+ 
+
+ 
+
+<In console#1> 
+
+vi rmp2p.log 
+
+tail -f rmp2p.log 
+
+ 
+
+ 
+
+<In console#2> 
+
+nohup /home/nvidia/nvlink --gtest_filter="PeerToPeerTest.BaseConfigurationTest/Vidmem" --verbose > rmp2p.log 2>&1 & 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+##### Get debug logs ##### 
+
+ 
+
+ 
+
+ 
+
+ 
+
+GPU NETIR log: 
+
+$ docker cp c1g2_container_01:/tmp . 
+
+ 
+
+ 
+
+ 
+
+ 
+
+GPU logs 
+
+$ docker cp c1g2_container_01:/app/launch_fmodel_gpu_0 . 
+
+ 
+
+ 
+
+$ docker cp c1g2_container_01:/app/launch_fmodel_gpu_1 . 
+
+ 
+
+ 
+
+ 
+
+ 
+
+NVlink logs: 
+
+$ nvidia-smi topo -m 
+
+$ nvidia-smi nvlink -gt d 
+
+$ nvidia-smi nvlink -e 
+
+ 
+
+ 
+
+# nvidia-smi nvlink -c 
+
+GPU 0: Graphics Device (UUID: GPU-990f0b41-6af9-5518-ad86-2bfa5d30b4a4) 
+
+Link 0, P2P is supported: true 
+
+Link 0, Access to system memory supported: true 
+
+Link 0, P2P atomics supported: true 
+
+Link 0, System memory atomics supported: true 
+
+Link 0, SLI is supported: true 
+
+Link 0, Link is supported: true 
+
+GPU 1: Graphics Device (UUID: GPU-467e5495-c376-554b-8fc1-eb5b92ada128) 
+
+Link 0, P2P is supported: true 
+
+Link 0, Access to system memory supported: true 
+
+Link 0, P2P atomics supported: true 
+
+Link 0, System memory atomics supported: true 
+
+Link 0, SLI is supported: true 
+
+Link 0, Link is supported: true 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+RM logs: 
+
+$ ssh nvidia@172.17.0.101 
+
+$ rm -rf kernel.log 
+
+$ sudo cp /root/kernel.log /home/nvidia 
+
+$ exit 
+
+ 
+
+ 
+
+$ scp nvidia@172.17.0.101:/root/kernel.log . 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Enable nvlink#4: (Works) 
+
+sudo -s 
+
+rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio 
+
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMMaxPCIELinkSpeed=0x5;RmNvlinkControl=0x100;RMNvlinkFirmwarePreloaded=0x1;EnableMSI=0;RmOverrideC2Clinks=0;RMForceNetlistNumber=0x2;RmNvlinkTxTrainControl=0x320008;RMNvLinkMinionSimModeControl=0x1;RMNvLinkMinionControl=0x11000000;RMNvLinkMinionSmfSettings=0x3;RmDisableCtxswUcodeFromChiplib=1;RmPmuBootstrapMode=2;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RMFailOnC2CAbsence=0' 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[New MSE FW testing] 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A2A2A2A2_guid1_A3A3A3A3_standalone_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug && \ 
+
+sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.5/test_mse_linkup_check_and_traffic_enable_9links_bidir.nvpex2 --log debug 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[Network config for external network] 
+
+ 
+
+ 
+
+nvidia@ubuntu-L1:~$ sudo vi /etc/netplan/01-netcfg.yaml 
+
+network: 
+
+  version: 2 
+
+  renderer: networkd 
+
+  ethernets: 
+
+    enalnro3i0: 
+
+      dhcp4: no 
+
+      addresses: [172.17.0.101/24] 
+
+      gateway4: 172.17.0.1 
+
+      nameservers: 
+
+        addresses: 
+
+          - 10.61.13.53 
+
+          - 10.117.49.179 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[Telnet setup] 
+
+root@ubuntu-L1:/home/nvidia# cat /etc/inetd.conf  
+
+# /etc/inetd.conf:  see inetd(8) for further informations. 
+
+# 
+
+# Internet superserver configuration database 
+
+# 
+
+# 
+
+# Lines starting with "#:LABEL:" or "#<off>#" should not 
+
+# be changed unless you know what you are doing! 
+
+# 
+
+# If you want to disable an entry so it isn't touched during 
+
+# package updates just comment it out with a single '#' character. 
+
+# 
+
+# Packages should modify this file by using update-inetd(8) 
+
+# 
+
+# <service_name> <sock_type> <proto> <flags> <user> <server_path> <args> 
+
+# 
+
+#:INTERNAL: Internal services 
+
+#discard    stream  tcp  nowait  root  internal 
+
+#discard    dgram  udp  wait  root  internal 
+
+#daytime    stream  tcp  nowait  root  internal 
+
+#time    stream  tcp  nowait  root  internal 
+
+ 
+
+ 
+
+#:STANDARD: These are standard services. 
+
+1234    stream  tcp  nowait  telnetd  /usr/sbin/tcpd  /usr/sbin/in.telnetd 
+
+ 
+
+ 
+
+#:BSD: Shell, login, exec and talk are BSD protocols. 
+
+  
+
+ 
+
+ 
+
+ 
+
+ 
+
+RM load command: 
+
+ 
+
+ 
+
+sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo sh nvload_rm.sh -v -d -b gr102_sim_hbm4.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2'" 
+
+ 
+
+ 
+
+sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo nvidia-persistenced -V" 
+
+ 
+
+ 
+
+sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo nvidia-smi" 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Load MSE FW command: 
+
+ 
+
+ 
+
+sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo /home/nvidia/nvpex2 --bdf 0003:01:00.0 --script /home/nvidia/mse_2.1/test_mse_load_guid0_E0E0E0E0_guid1_E1E1E1E1_moduleid_4_multi_node_tray_0_bidir.nvpex2 --log debug" 
+
+ 
+
+ 
+
+sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo /home/nvidia/nvpex2 --bdf 0006:01:00.0 --script /home/nvidia/mse_2.1/test_mse_load_guid0_E2E2E2E2_guid1_E3E3E3E3_moduleid_5_multi_node_tray_0_bidir.nvpex2 --log debug" 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[How to update kernel command line] 
+
+ 
+
+ 
+
+Edit /etc/default/grub.d/50-cloudimg-settings.cfg from guest Ubuntu VM and reboot. 
+
+and sudo update-grub to update new kernel command line to /boot/grub/grub.cfg 
+
+ 
+
+ 
+
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-5.15.0-163-generic root=UUID=91eb67c0-827e-4de2-8e35-0ba9278424f9 ro console=tty1 console=ttyAMA0 jjang_test=1 
+
+[    0.000000] Unknown kernel command line parameters "BOOT_IMAGE=/boot/vmlinuz-5.15.0-163-generic jjang_test=1", will be passed to user space. 
+
+ 
+
+ 
+
+set iommu.passthrough=1 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[RM Channel testing] 
+
+ 
+
+ 
+
+/home/nvidia/channel --gtest_filter=*CeVirtual* -d 0x900ddeed --verbose 
+
+ 
