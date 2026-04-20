@@ -1,0 +1,29 @@
+
+
+
+
+
+I!gpu_sc_commlib.cpp(428): GPU_STUB: gpu reg write, length=1, size=2, gp_size=4
+I!gpu_sc_commlib.cpp(500): GPU_STUB: gpu reg write via axi, addr=0x802100b81408, length=1, size=2, gp_size=4 prot=0, data=0x00000101
+I!                         GPU_STUB: gpu reg write via axi, addr=0x802100b81010, length=1, size=2, gp_size=4 prot=0, data=0x00000010
+I!gpu_sc_commlib.cpp(526): GPU_STUB: gpu reg write req via axi, Burst request sent. Beats remaining are #0.
+I!                         GPU_STUB: gpu reg write req via axi, Burst request sent. Beats remaining are #4294967295 (0xFFFFFFFF).
+I!gpu_sc_commlib.cpp(535): GPU_STUB: Half-word access requested for first beat.
+I!gpu_sc_commlib.cpp(500): GPU_STUB: gpu reg write via axi, addr=0x802100b81016, length=4294967295, size=2, gp_size=4 prot=0, data=0x00000000
+I!gpu_sc_commlib.cpp(526): GPU_STUB: gpu reg write req via axi, Burst request sent. Beats remaining are #4294967294.
+I!gpu_sc_commlib.cpp(535): GPU_STUB: Half-word access requested for first beat.
+
+root@dl325g11-2067:~/OCX/c1g2_net15_ocx/release_pkg_net15_ocx_c1g2# tail -f simout.txt 
+I!gpu_sc_commlib.cpp(477): GPU_STUB: GPU0 MMIO write started
+I!gpu_sc_commlib.cpp(175): GPU_STUB: gpu_sc_commlib::gpu2lic_intr_req_handler() report GPU IRQ assert instance_num = 0 
+I!gpu_sc_commlib.cpp(623): GPU_STUB: GPU0 MMIO read ended
+I!gpu_sc_commlib.cpp(536): GPU_STUB: GPU0 MMIO write ended
+I!gpu_sc_commlib.cpp(477): GPU_STUB: GPU0 MMIO write started
+I!gpu_sc_commlib.cpp(565): GPU_STUB: GPU0 MMIO read started  <== double enter PCIe MMIO function
+I!gpu_sc_commlib.cpp(536): GPU_STUB: GPU0 MMIO write ended
+I!gpu_sc_commlib.cpp(623): GPU_STUB: GPU0 MMIO read ended
+I!gpu_sc_commlib.cpp(565): GPU_STUB: GPU0 MMIO read started
+I!gpu_sc_commlib.cpp(477): GPU_STUB: GPU0 MMIO write started  <== double enter PCIe MMIO function
+
+
+
