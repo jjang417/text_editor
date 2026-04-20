@@ -27,3 +27,409 @@ I!gpu_sc_commlib.cpp(477): GPU_STUB: GPU0 MMIO write started  <== double enter P
 
 
 
+Solution: Add sc_mutex to prevent double enter GPU MMIO function handle_snic2gpu_axi().
+File: gpu_sc_commlib.h
+class gpu_sc_commlib : public gpu_sc_base
+{
+public:
+    gpu_sc_commlib(sc_core::sc_module_name name, uint32_t socket_id);
+    SC_HAS_PROCESS(gpu_sc_commlib);
+    ~gpu_sc_commlib();
+
+    //OS thread worker
+    std::thread m_worker;
+
+    //OS thread fifo queue
+    OSBlockingQueue<GpuPCIeReq> gpu_pcie_req_queue;
+
+    // Handle external thread pcie mmio read/write event
+    AsyncGpuPCIeReqBridge gpu_pcie_bridge;
+
+    // Handle external thread to SC kernel access
+    AsyncGpuSysMemReqBridge gpu_sys_mem_bridge;
+
+    GPVar gpu_debug;
+    GPVar gpu_disabled;
+    GPVar gpu_disable_pcie_conifg;
+    bool is_pcie_config;
+ 
+    virtual void StartUp();
+    virtual void ShutDown();
+    struct commlib_handle* getgpuInterface();
+    virtual void Reset(bool from_contructor = false);
+ 
+    uint32_t GpuConfigRead (uint32_t address);
+    void GpuConfigWrite (uint32_t address, uint32_t data);
+ 
+    void set_requesterID(uint32_t bus, uint32_t device, uint32_t function);
+ 
+    //pcie port for config path
+    sc_core::sc_export<scsim::cmod::pci_bus_if> gpuPCIConfig;
+ 
+ 	//instantiating the pcie_ep_ch class to be bound to the export
+    gpu_pcie_commlib_intf gpu_commlib_ch;
+ 
+    //GPU to SoC sysmem read/write callback functions
+    static void GpuToSoCSysMemRead (uint32_t commlib_instance_num, uint64_t paddr, uint32_t data_len, uint8_t * data_ptr);
+    static void GpuToSoCSysMemWrite (uint32_t commlib_instance_num, uint64_t paddr, uint32_t data_len, uint8_t * data_ptr);
+  
+    //GPU to SoC PCIe irq callback functions
+    static void GpuToPCIeIrqAssert (uint32_t commlib_instance_num);
+    static void GpuToPCIeIrqDeassert (uint32_t commlib_instance_num);
+ 
+    //Handle GPU IRQ event
+    void gpu2mc_mem_req_th();
+ 
+    // SC remote_gpu_pcie_handler thread
+    void remote_gpu_pcie_handler();
+
+    // GPU to LIC interrupts handler
+    void gpu2lic_intr_req_handler();
+ 
+    //Notify GPU IRQ event
+    async_event gpu_irq_events;
+    bool has_gpu_irq_asserts;
+ 
+    // commlib_adapter instance
+    void* commlib_adapter;
+
+protected:
+    // SNIC2ACB(GPU) AXI bus handler
+    void handle_snic2gpu_axi( int ID, tlm::tlm_generic_payload& gp, sc_core::sc_time& delay);
+ 
+    // SNIC2GPU Escape bus handler (RPC Handler for VDK)
+    void handle_snic2gpu_escape(int ID, tlm::tlm_generic_payload& gp, sc_core::sc_time& delay);
+ 
+    // SNIC2GPU Escape handler for VDM
+    void handle_snic2gpu_VDM_escape( int ID, tlm::tlm_generic_payload& gp, sc_core::sc_time& delay);
+ 
+    // SNIC2GPU escape handler for pcie rc escapewr/rd
+    void handle_snic2gpu_pcie_tdisp_escape( int ID, tlm::tlm_generic_payload& gp, sc_core::sc_time& delay);
+
+private:
+ 
+    uint32_t socket_id;
+    bool m_debug;
+    uint32_t m_requesterId;
+ 
+    // commlib APIs
+    typedef void       (*pcie_read_t)(void*, uint32_t, uint32_t&);
+    typedef void       (*pcie_write_t)(void*, uint32_t, uint32_t&);
+    typedef void       (*pcie_mmio_read_t)(void*, uint64_t, uint32_t&);
+    typedef void       (*pcie_mmio_write_t)(void*, uint64_t, uint32_t&);
+    typedef void       (*gpu_sysmem_read_callback_t) (uint32_t, uint64_t, uint32_t, uint8_t *);
+    typedef void       (*gpu_sysmem_write_callback_t) (uint32_t, uint64_t, uint32_t, uint8_t *);
+    typedef void       (*gpu_irq_assert_callback_t) (uint32_t);
+    typedef void       (*gpu_irq_deassert_callback_t) (uint32_t);
+    typedef void       (*register_gpu_sysmem_callback_t)(gpu_sysmem_read_callback_t gpu_sysmem_read_callback,
+                                                         gpu_sysmem_write_callback_t gpu_sysmem_write_callback);
+    typedef void       (*register_gpu_irq_callback_t)(gpu_irq_assert_callback_t gpu_irq_assert_callback,
+                                                      gpu_irq_deassert_callback_t gpu_irq_deassert_callback);
+ 
+    pcie_read_t  pcie_config_read;
+    pcie_write_t pcie_config_write;
+    pcie_mmio_read_t  pcie_mmio_read;
+    pcie_mmio_write_t pcie_mmio_write;
+    register_gpu_sysmem_callback_t register_gpu_sysmem_callback;
+    register_gpu_irq_callback_t register_gpu_irq_callback;
+ 
+    // commlib_adapter pcie connection handle
+    void* commlib_pcie_handle;
+ 
+    // commlib_adapter c2c connection handle
+    void* commlib_c2c_handle;
+ 
+    axi_state_t axi_state;
+ 
+    // Below are logic intended to support below write pattern with byte enable:
+    // byte_en 0x000000ff
+    // byte_en 0x0000ff00
+    // byte_en 0x00ff0000
+    // byte_en 0xff000000
+    // How we do it:  cache the write data in a accumulator before issuing full 4-byte write to GPU
+    // The reason we have to do this accumulation instead of adding direct byte enable support
+    // is because IBusMem::BusMemWrBlk() is legacy and changing its API needs to be well thought out
+    bool     axi_cache_mode;
+    uint32_t axi_cache_data;
+    uint64_t axi_cache_addr; // sanity check to make sure all 4 1-byte writes are for same address
+    uint32_t instance_num;
+
+    // To protect GPU MMIO read/write
+    sc_core::sc_mutex gpu_mmio_access_mutex;
+};
+
+File: gpu_sc_commlib.cpp
+// SNIC2GPU(ACB) AXI bus handler
+void gpu_sc_commlib::handle_snic2gpu_axi(int ID, tlm::tlm_generic_payload& gp, sc_time& delay)
+{
+    if (!commlib_pcie_handle)
+    {
+        SCSIM_ERROR("GPU_STUB: commlib_pcie_handle is NULL\n");
+        gp.set_response_status(tlm::TLM_GENERIC_ERROR_RESPONSE);
+        return;
+    }
+ 
+    gpu_mmio_access_mutex.lock();
+
+    // Fetch the AXI extensions
+    // NOTES AMBA-PV:
+    //
+    // Burst length: get_length()  : Default 1
+    // Burst size  : get_size      : Default 8 (bytes)
+    // 1) gp.get_data_length() >= apv.get_length() * apv.get_size()
+    // 2) gp.get_streaming_width() == apv.get_size()
+    //
+    gp.get_extension(snic_amba_ext);
+    gp.get_extension(snic_nv_ext);
+ 
+    // Fetch the AXI request from SNIC
+    axi_state.req.theBurstAddr = gp.get_address();
+    if (snic_amba_ext)
+    {
+        if (gp.get_streaming_width() != snic_amba_ext->get_size())
+        {
+            if (m_debug) Info("GPU_STUB : WARNING GP streaming width (%d) not same as AMBA PV extension burst size(%d). Taking GP burst-size.\n", gp.get_streaming_width(), snic_amba_ext->get_size());
+        }
+        axi_state.req.theBurstSize = gp.get_streaming_width();
+ 
+        if (((gp.get_data_length() + axi_state.req.theBurstSize - 1)/axi_state.req.theBurstSize) != snic_amba_ext->get_length())
+        {
+            axi_state.req.theBurstLength = (gp.get_data_length() + axi_state.req.theBurstSize - 1)/axi_state.req.theBurstSize;
+            if (m_debug) Info("GPU_STUB : WARNING Burst length calculated (%u) from GP data length (%d bytes) is not same as AMBA PV extension burst length(%d). Overriding burst-length based on GP data length.\n", axi_state.req.theBurstLength, gp.get_data_length(), snic_amba_ext->get_length());
+        } else {
+            axi_state.req.theBurstLength = snic_amba_ext->get_length();
+        }
+ 
+        axi_state.req.theProt = 0;
+        axi_state.req.theProt |= (snic_amba_ext->is_privileged() ? (0x1 << 0) : 0);
+        axi_state.req.theProt |= (snic_amba_ext->is_non_secure() ? (0x1 << 1) : 0);
+        axi_state.req.theProt |= (snic_amba_ext->is_instruction() ? (0x1 << 2) : 0);
+    }
+    else
+    {
+        // Take default values
+        // TBD: Confirm this for AXI
+        //Info("GPU_STUB: WARNING GP does not have AMBA extension set. Assuming burst size of 2 (4 bytes) and Secured access (3'b000)\n");
+        //axi_state.req.theBurstSize = 3; //  (1<<3) = 8 bytes
+        axi_state.req.theBurstSize = 2; //  (1<<2) = 4 bytes
+        axi_state.req.theProt = 0x0; // aprot ; Secured access 3'b000
+    }
+ 
+    axi_state.req.theBurstId = 0; // One at a time with b_transport()
+ 
+    // NOTE: The address could point to half-word which means
+    //       only only the half-word of data to be sent
+    bool gp_address_half_word = (axi_state.req.theBurstAddr & HOST_ADDR_HALF_WORD_MASK) ? true : false;
+ 
+    if (gp.get_command() == tlm::TLM_WRITE_COMMAND)
+    {
+        uint32_t bytes_per_beat = (1 << axi_state.req.theBurstSize);
+        uint32_t required_beats = gp.get_data_length() / bytes_per_beat;
+
+        if (axi_state.req.theBurstLength == 0 || axi_state.req.theBurstLength < required_beats) {
+            axi_state.req.theBurstLength = gp.get_data_length() / bytes_per_beat;
+            if (gp.get_data_length() % bytes_per_beat != 0) {
+                // add extra beat for remaining bytes that is less than a full beat
+                axi_state.req.theBurstLength ++;
+            }
+            axi_state.req.theBurstId = 0;
+            if (m_debug) {
+                Info("GPU_STUB: gpu reg write, length=%u, size=%u, gp_size=%u \n", axi_state.req.theBurstLength, axi_state.req.theBurstSize,  gp.get_data_length());
+            }
+        }
+ 
+        NvU032 *axi_data = reinterpret_cast<NvU032 *>(gp.get_data_ptr());
+        uint32_t * be_en = (uint32_t *)gp.get_byte_enable_ptr();
+ 
+        // Handle 4-byte write but with single byte enable:
+        // we accumulate write data until all 4 bytes are in before issue full 4-byte write to GPU
+        // byte_en 0x000000ff
+        // byte_en 0x0000ff00
+        // byte_en 0x00ff0000
+        // byte_en 0xff000000
+        if (axi_cache_mode            &&
+            gp.get_data_length() == 4 &&
+            be_en != NULL             &&
+            *be_en != 0xffffffff)
+        {
+ 
+            uint32_t wdata = *(uint32_t*)gp.get_data_ptr();
+ 
+            if (*be_en == 0xff)
+            {
+                 axi_cache_data = (wdata & *be_en); // clear history and store the first byte data
+                 axi_cache_addr = gp.get_address();
+            }
+            else
+            {
+                 axi_cache_data = (axi_cache_data & ~(*be_en)) | (wdata & *be_en);
+                 if (axi_cache_addr != gp.get_address())
+                     cslError(("Unexpected write to address 0x%llx while we are cacheing write data for another address 0x%llx byte_en 0x%x\n",
+                         gp.get_address(), axi_cache_addr, *be_en));
+            }
+ 
+            if (*be_en != 0xff000000)
+            {
+                if (m_debug)
+                    Info("Accumulate write data 0x%x as 0x%x for address 0x%llx byte_en 0x%x\n",
+                        wdata, axi_cache_data, (unsigned long long)gp.get_address(), *be_en);
+                gp.set_response_status(tlm::TLM_OK_RESPONSE);
+                gpu_mmio_access_mutex.unlock();
+                return;
+            }
+            if (m_debug)
+                Info("Accumulated 4 byte of data 0x%x for address 0x%llx and ready to issue the write to GPU\n",
+                    axi_cache_data, (unsigned long long)gp.get_address());
+            // overwrite write data in place
+            *(uint32_t*)gp.get_data_ptr() = axi_cache_data;
+        }
+ 
+        axi_state.req.isWrite = true;
+
+        // Put this new write into the queue to host proxy
+        // For burst-write we do one bus-size chunk at a time
+        // This limitation is of the SIMFRONT
+        //
+        do
+        {
+            if (m_debug)
+            {
+                Info("GPU_STUB: gpu reg write via axi, addr=" HOST_ADDR_PRINTF_STR ", length=%u, size=%u, gp_size=%u prot=%u, data=" HOST_DATA_PRINTF_STR "\n",
+                    (unsigned long int) axi_state.req.theBurstAddr, axi_state.req.theBurstLength, axi_state.req.theBurstSize,
+                    gp.get_data_length(),
+                    axi_state.req.theProt, (unsigned long int) *axi_data);
+                fflush(stdout); fflush(stderr);
+            }
+
+            {
+                uint64_t req_addr = axi_state.req.theBurstAddr;
+                uint32_t req_data = *axi_data;
+
+                // PCIe mmio write
+                GpuPCIeReq gpu_pcie_req;
+                gpu_pcie_req.pcie_type = PcieType::PCIE_MMIO;
+                gpu_pcie_req.req_addr = req_addr;
+                gpu_pcie_req.req_data = &req_data;
+                gpu_pcie_req.is_write = true;
+                gpu_pcie_req_queue.write(gpu_pcie_req);
+
+                // Wait for complete event
+                wait(gpu_pcie_bridge.gpu_pcie_req_done);
+            }
+ 
+            if (axi_state.req.theBurstLength > 0) {
+                axi_state.req.theBurstLength -= 1;
+            }
+ 
+            if (m_debug)
+                Info("GPU_STUB: gpu reg write req via axi, Burst request sent. Beats remaining are #%u.\n", axi_state.req.theBurstLength);
+ 
+            // TBD: Confirm this logic of Half/Full word access
+            if (axi_state.req.theBurstAddr & HOST_ADDR_HALF_WORD_MASK)
+            {
+                // Non-word aligned address; Half-word access
+                // Increment only half-word address length
+                // After this increment all the accesses are word aligned
+                // i.e. adr += 4
+                if (m_debug) Info("GPU_STUB: Half-word access requested for first beat.\n");
+                axi_state.req.theBurstAddr += (1 << (axi_state.req.theBurstSize/2));
+            }
+            else // Word aligned address; Full-word access i.e. adr += 8
+                axi_state.req.theBurstAddr += (1 << axi_state.req.theBurstSize);
+ 
+            // Go to next chunk of burst; Data is always aligned
+            axi_data++;
+            axi_state.req.theBurstId++;
+        } while (axi_state.req.theBurstLength > 0);
+
+        // Now the GP response status
+        gp.set_response_status(tlm::TLM_OK_RESPONSE);
+        axi_state.req.isWrite = false;
+    }
+    else if (gp.get_command() == tlm::TLM_READ_COMMAND)
+    {
+        axi_state.req.isRead = true;
+        uint32_t bytes_per_beat = (1 << axi_state.req.theBurstSize);
+        uint32_t required_beats = gp.get_data_length() / bytes_per_beat;
+
+        if (axi_state.req.theBurstLength == 0 || axi_state.req.theBurstLength < required_beats) {
+            axi_state.req.theBurstLength = gp.get_data_length() / bytes_per_beat;
+            if (gp.get_data_length() % bytes_per_beat != 0) {
+                // add extra beat for remaining bytes that is less than a full beat
+                axi_state.req.theBurstLength ++;
+            }
+            axi_state.req.theBurstId = 0;
+            if (m_debug) {
+                Info("GPU_STUB: gpu reg read, length=%u, size=%u, gp_size=%u \n", axi_state.req.theBurstLength, axi_state.req.theBurstSize,  gp.get_data_length());
+            }
+        }
+ 
+        // Put this new read into the queue to GPU host proxy
+        // For burst-read we do one bus-size chunk at a time
+        // This limitation is of the SIMFRONT
+        cslAssertMsg(((gp.get_data_length() % sizeof(NvU032)) != 0) , ("ERROR:: AXI data length is not 4 bytes alignment.\n"));
+        NvU032 *axi_data = reinterpret_cast<NvU032 *>(gp.get_data_ptr());
+        do
+        {
+            if (m_debug)
+            {
+                Info("GPU_STUB: gpu reg read req via axi, addr=0x%lx, length=%u, size=%u, gp_size=%u prot=%u\n",
+                    axi_state.req.theBurstAddr, axi_state.req.theBurstLength, axi_state.req.theBurstSize, gp.get_data_length(), axi_state.req.theProt);
+                fflush(stdout); fflush(stderr);
+            }
+
+            {
+                uint64_t req_addr = axi_state.req.theBurstAddr;
+                uint32_t readData = 0;
+ 
+                // PCIe memory read
+                GpuPCIeReq gpu_pcie_req;
+                gpu_pcie_req.pcie_type = PcieType::PCIE_MMIO;
+                gpu_pcie_req.req_addr = req_addr;
+                gpu_pcie_req.req_data = &readData;
+                gpu_pcie_req.is_write = false;
+                gpu_pcie_req_queue.write(gpu_pcie_req);
+
+                // Wait for complete event
+                wait(gpu_pcie_bridge.gpu_pcie_req_done);
+
+                axi_data[axi_state.req.theBurstId] = readData;
+                if (m_debug) {
+                    Info("GPU_STUB: gpu reg read req via axi, readData=0x%08x\n", readData);
+                }
+            }
+ 
+            if (axi_state.req.theBurstLength > 0) {
+                axi_state.req.theBurstLength -= 1;
+            }
+ 
+            if (m_debug)
+                Info("GPU_STUB: gpu reg read req via axi, Burst request sent. Beats remaining are #%u.\n", axi_state.req.theBurstLength);
+ 
+            // TBD: Confirm this logic of Half/Full word access
+            if (axi_state.req.theBurstAddr & HOST_ADDR_HALF_WORD_MASK)
+            {
+                // Non-word aligned address; Half-word access
+                // Increment only half-word address length
+                // After this increment all the accesses are word aligned
+                // i.e. adr += 4
+                if (m_debug) Info("GPU_STUB: Half-word access requested for first beat.\n");
+                axi_state.req.theBurstAddr += (1 << (axi_state.req.theBurstSize/2));
+            } else // Word aligned address; Full-word access i.e. adr += 8
+                axi_state.req.theBurstAddr += (1 << axi_state.req.theBurstSize);
+ 
+            axi_state.req.theBurstId++;
+        } while (axi_state.req.theBurstLength > 0);
+
+        axi_state.req.isRead = false;
+ 
+        // All beats received; READ has finished.
+        // Now the GP response status
+        gp.set_response_status(tlm::TLM_OK_RESPONSE);
+    }
+    else
+        Fail("GPU_STUB gpu_sc::handle_snic2gpu_axi : Received invalid command.\n");
+
+    gpu_mmio_access_mutex.unlock();
+    return;
+}
