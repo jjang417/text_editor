@@ -14,29 +14,18 @@
 root@dl325g11-2067:/localhome/local-jjang# cat /etc/ssh/sshd_config 
 
 # 
-
 # Ansible managed 
-
 # 
-
 # willshersystems:ansible-sshd 
 
  
 
- 
-
 Include /etc/ssh/sshd_config.d/*.conf 
-
 AcceptEnv LANG LC_* 
-
 KbdInteractiveAuthentication no 
-
 PrintMotd no 
-
 Subsystem sftp  /usr/lib/openssh/sftp-server 
-
 UsePAM yes 
-
 PermitRootLogin yes 
 
  
