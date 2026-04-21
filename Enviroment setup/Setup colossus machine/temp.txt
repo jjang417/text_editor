@@ -1,0 +1,54 @@
+<ARM Grace platform> 
+  ssh root@10.96.83.16 
+  Password: jjanghr650n-0006 
+
+ 
+
+ 
+
+ <X86 768 GB DDR machine>
+  ssh root@10.63.145.118 
+  password: jjydl325g11-2067 
+
+<Enable root user permission>
+root@dl325g11-2067:/localhome/local-jjang# cat /etc/ssh/sshd_config 
+
+# 
+
+# Ansible managed 
+
+# 
+
+# willshersystems:ansible-sshd 
+
+ 
+
+ 
+
+Include /etc/ssh/sshd_config.d/*.conf 
+
+AcceptEnv LANG LC_* 
+
+KbdInteractiveAuthentication no 
+
+PrintMotd no 
+
+Subsystem sftp  /usr/lib/openssh/sftp-server 
+
+UsePAM yes 
+
+PermitRootLogin yes 
+
+ 
+
+root@dl325g11-2067:/localhome/local-jjang# sudo passwd root 
+
+ 
+local-jjang@dl325g11-2067:~$ systemctl restart ssh 
+==== AUTHENTICATING FOR org.freedesktop.systemd1.manage-units === 
+Authentication is required to restart 'ssh.service'. 
+Authenticating as: root 
+Password:  
+==== AUTHENTICATION COMPLETE === 
+
+ 
