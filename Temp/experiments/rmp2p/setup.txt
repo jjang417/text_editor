@@ -20,17 +20,6 @@ For GPU loopback mode testing:
 
 $ docker run -d -it --rm --privileged --name=c1g2_container_01 -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/backup/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.init_vector.dump:/opt/mse_dump/test_mse_load_guid0_A0A0A0A0_guid1_A1A1A1A1_standalone_bidir.init_vector.dump -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/backup/mse_2.5_single_gpu_loopbacks/test_mse_load_guid0_A2A2A2A2_guid1_A3A3A3A3_standalone_bidir.init_vector.dump:/opt/mse_dump/test_mse_load_guid0_A2A2A2A2_guid1_A3A3A3A3_standalone_bidir.init_vector.dump -v /localhome/local-jjang/strata_compute-vera_switch/c1g2_auto_run.sh:/opt/scsim/c1g2_auto_run.sh -v $PWD/custom_config:/root/custom_config -v /boot:/boot:ro -v /lib/modules:/lib/modules:ro -v /localhome/local-jjang/strata_compute-vera_switch/for_GTC-demo/HGX-L1-GUEST-15G.img:/opt/scsim/c1g2/HGX-L1-GUEST.img --ulimit msgqueue=-1:-1 -e CSL="-invalid_xtl_register_access,[disable]csl_grp_host_error_pri_intr,[noabort]assert,[disable]sim_tasker.cpp,[enable;debuglevel:20;flush]chiplib_e,[enable;flush]CPUModel,[enable]MSIX,NVLC,NVLPW," -p 1234:1234 c1g2_docker_img:latest --component-id SCSIM_TB500_0 --client-id "GPU_0,GPU_1" --config-paths "/root/custom_config/devproc_gr102_conf_0.json,/root/custom_config/devproc_gr102_conf_1.json" 
 
- 
-
- 
-
- 
-
- 
-
- 
-
- 
 
  
 
