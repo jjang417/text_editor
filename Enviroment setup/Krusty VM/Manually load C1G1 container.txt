@@ -1,0 +1,58 @@
+
+
+
+To load C1G2 container on Krusty VM 
+
+
+root@jjang-b110-u2204-03-31:~/OCX/c1g2_net15_ocx# docker build -t vr_c1g2_sim:lat_c1g2_sim .
+
+# Not in Krusty VM
+root@jjang-b110-u2204-03-31:~/OCX/c1g2_net15_ocx# docker run -it --privileged --ulimit msgqueue=-1:-1 --ipc=host --name c1g2_container --shm-size=6g --network=host -v /root/OCX/c1g2_net15_ocx/release_pkg_net15_ocx_c1g2:/sim/release_pkg_net15_ocx_c1g2 vr_c1g2_sim:lat_c1g2_sim
+
+# In Krusty VM
+root@jjang-b110-u2204-03-31:~/OCX/c1g2_net15_ocx# docker run -it --privileged --ulimit msgqueue=-1:-1 --ipc=host --name c1g2_container --shm-size=6g --network=host -v /root/OCX/c1g2_net15_ocx/release_pkg_net15_ocx_c1g2:/sim/release_pkg_net15_ocx_c1g2 --add-host dc7-lic-35:10.126.127.39 --add-host lic-34:10.126.124.43 --add-host dc6-lic-06:10.128.66.182 --add-host dc6-lic-07:10.128.66.183 --add-host synopsys-lic-02:10.128.65.11 --add-host dc7-lic-01:10.126.127.66 --add-host dc7-lic-03:10.126.127.69 --add-host dc7-lic-0:10.126.127.66 --add-host dc7-arm-lic-01:10.126.127.70 --add-host dc6-arm-lic-02:10.152.55.166 --add-host indc-lic-01:10.25.231.230 --add-host fi-vmlic-01:10.64.141.50 vr_c1g2_sim:lat_c1g2_sim
+docker: Error response from daemon: Conflict. The container name "/c1g2_container" is already in use by container "cc1e3b27e7f9998bad28fffeda30c1e8264443f7262c54ac1b994af5c027d443". You have to remove (or rename) that container to be able to reuse that name.
+
+Run 'docker run --help' for more information
+root@jjang-b110-u2204-03-31:~/OCX/c1g2_net15_ocx# docker rm -f c1g2_container
+c1g2_container
+root@jjang-b110-u2204-03-31:~/OCX/c1g2_net15_ocx# docker run -it --privileged --ulimit msgqueue=-1:-1 --ipc=host --name c1g2_container --shm-size=6g --network=host -v /root/OCX/c1g2_net15_ocx/release_pkg_net15_ocx_c1g2:/sim/release_pkg_net15_ocx_c1g2 --add-host dc7-lic-35:10.126.127.39 --add-host lic-34:10.126.124.43 --add-host dc6-lic-06:10.128.66.182 --add-host dc6-lic-07:10.128.66.183 --add-host synopsys-lic-02:10.128.65.11 --add-host dc7-lic-01:10.126.127.66 --add-host dc7-lic-03:10.126.127.69 --add-host dc7-lic-0:10.126.127.66 --add-host dc7-arm-lic-01:10.126.127.70 --add-host dc6-arm-lic-02:10.152.55.166 --add-host indc-lic-01:10.25.231.230 --add-host fi-vmlic-01:10.64.141.50 vr_c1g2_sim:lat_c1g2_sim
+Tools-VDK-Regr-Base
+[2026-04-21 05:49:36 UTC] Launching GPU devproc fmod in the background...
+Successfully updated 'fmodel_root_dir' in /sim/release_pkg_net15_ocx_c1g2/gpu_fmod_89068823/devproc/conf/devproc_gr102_conf_0.json to: /sim/release_pkg_net15_ocx_c1g2/gpu_fmod_89068823/devproc/build
+Successfully updated 'fmodel_root_dir' in /sim/release_pkg_net15_ocx_c1g2/gpu_fmod_89068823/devproc/conf/devproc_gr102_conf_1.json to: /sim/release_pkg_net15_ocx_c1g2/gpu_fmod_89068823/devproc/build
+[2026-04-21 05:49:36 UTC] Waiting for '/devproc ' PID (max 300s)...
+[2026-04-21 05:49:36 UTC] Process '/devproc ' not found yet. Waiting... (Elapsed: 0/300s)
+[2026-04-21 05:49:41 UTC] Found '/devproc ' with PID: 20
+21
+[2026-04-21 05:49:41 UTC] GPU_0 PID: 20
+[2026-04-21 05:49:41 UTC] GPU_1 PID: 21
+[2026-04-21 05:49:41 UTC] Launching OCX VM in the background...
+[2026-04-21 05:49:41 UTC] Waiting for 'OCX/simulation/sim ' PID (max 300s)...
+[2026-04-21 05:49:41 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 0/300s)
+[2026-04-21 05:49:46 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 5/300s)
+[2026-04-21 05:49:51 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 10/300s)
+[2026-04-21 05:49:56 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 15/300s)
+[2026-04-21 05:50:01 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 20/300s)
+[2026-04-21 05:50:06 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 25/300s)
+[2026-04-21 05:50:11 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 30/300s)
+[2026-04-21 05:50:16 UTC] Process 'OCX/simulation/sim ' not found yet. Waiting... (Elapsed: 35/300s)
+[2026-04-21 05:50:21 UTC] Found 'OCX/simulation/sim ' with PID: 227
+[2026-04-21 05:50:21 UTC] SUCCESS: OCX VM process is running with PID: 227
+[2026-04-21 05:50:21 UTC] Waiting for 'Ubuntu 22.04.5 LTS ubuntu-L1' boot up ... (timeout 30 minutes)
+[2026-04-21 06:03:07 UTC] 'Ubuntu 22.04.5 LTS ubuntu-L1' found!
+[2026-04-21 06:03:07 UTC] Running nvload_rm.sh via SSH...
+Cannot stat /root/.ssh/known_hosts: No such file or directory
+Cannot stat /root/.ssh/known_hosts: No such file or directory
+[2026-04-21 06:03:08 UTC] Waiting for 'RM loaded.'... (timeout 10 minutes)
+[2026-04-21 06:06:53 UTC] 'RM loaded.' found!
+[2026-04-21 06:06:53 UTC] Running nvidia-persistenced via SSH ... (timeout 50 minutes)
+[2026-04-21 06:08:28 UTC] Running nvidia-persistenced via SSH finished successfully.
+[2026-04-21 06:08:28 UTC] Running nvidia-smi via SSH ... (timeout 10 minutes)
+[2026-04-21 06:09:08 UTC] Running nvidia-smi via SSH finished successfully.
+[2026-04-21 06:09:08 UTC] Script is running...
+[2026-04-21 06:10:08 UTC] Script is running...
+[2026-04-21 06:11:08 UTC] Script is running...
+[2026-04-21 06:12:08 UTC] Script is running...
+[2026-04-21 06:13:08 UTC] Script is running...
+

@@ -1,0 +1,631 @@
+https://nvidia.atlassian.net/wiki/spaces/DGXCLD/pages/3172161604/Krusty+Quickstart+For+New+Users 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Krusty is our internal private cloud where you can easily 
+
+create entire virtual compute GPU clusters in just a few minutes. 
+
+ 
+
+ 
+
+Username: jjang 
+
+Host: krusty5.nvidia.com 
+
+SSH command: ssh jjang@krusty5.nvidia.com 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Your account does not allow for password-based auth. 
+
+Use your SSH key for authentication. 
+
+ 
+
+ 
+
+Quickstart guide for all new Krusty users - please read it: 
+
+https://nvidia.atlassian.net/wiki/spaces/DGXCLD/pages/3172161604/ 
+
+ 
+
+ 
+
+Your account gives you access to krusty5.nvidia.com (USA, Santa Clara) 
+
+ 
+
+ 
+
+After SSHing to Krusty, you can create your first BCM cluster with: 
+
+- 'cod cluster create --version 11.0' to get a regular COD BCM cluster (takes just 5 minutes!), or 
+
+- 'icod 11' to get an instant, but temporary, BCM 11.0 cluster (takes just 2 seconds!). 
+
+ 
+
+ 
+
+Questions? Slack: #bcm-krusty https://app.slack.com/client/E04MHQAEP1A/C03DZHMJ1G9 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[Create a cluster VM] 
+
+ 
+
+ 
+
+jjang@krusty5:~$ cod cluster create --version 11.0 --distro ubuntu2204 -m cod.512g48c --head-node-root-volume-size 256 --nodes 0 
+
+00:43:11:     INFO: Please wait... 
+
+00:43:12:     INFO: -------------------------------------------------------- 
+
+00:43:12:     INFO:     Cluster:  jjang-b110-u2204-03-31                     
+
+00:43:12:     INFO: -------------------------------------------------------- 
+
+00:43:12:     INFO:  Image name:  bcmh-ubuntu2204-11.0-9(ubuntu2204-11.0:9)  
+
+00:43:12:     INFO:  Node image:  bcmn-ubuntu2204-11.0-9(ubuntu2204-11.0:9)  
+
+00:43:12:     INFO:  Image date:  2026-03-18 11:13 (12d 13h ago)             
+
+00:43:12:     INFO:  Git hashes:  cmdaemon: 01b8e576a4                       
+
+00:43:12:     INFO:               cm-setup: a3984d7a61                       
+
+00:43:12:     INFO:               cluster-tools: ccb17abf22                  
+
+00:43:12:     INFO:               base-view: 463a358662                      
+
+00:43:12:     INFO:     Version:  11.0                                       
+
+00:43:12:     INFO:      Distro:  ubuntu2204                                 
+
+00:43:12:     INFO:   Head node:  1 (cod.512g48c: 524288 RAM, 48 vCPUs)      
+
+00:43:12:     INFO:               Root disk: 256 GiB                         
+
+00:43:12:     INFO:       Nodes:  0 (cod.2g2c: 2048 RAM, 2 vCPUs)            
+
+00:43:12:     INFO:    Trace ID:  d9beb91f-f17b-4831-ae8b-6623e56a9d82       
+
+00:43:12:     INFO: -------------------------------------------------------- 
+
+00:43:12:     INFO: Press ENTER to continue and create the cluster. 
+
+00:43:12:     INFO: Press ctrl+c (or type 'a') to abort. Type 'i' for more info. 
+
+ 
+
+ 
+
+00:43:14:     INFO: Contacted the resource scheduler API (id: job_9bbaf5fe) 
+
+00:43:14:     INFO: --- 
+
+00:43:14:     INFO: Resource request status for job_9bbaf5fe: vms(x) 
+
+00:43:14:     INFO: --- 
+
+00:43:15:     INFO: Waiting for the resources to be created. 
+
+00:43:22:     INFO: Head node instance create in progress. 
+
+00:43:29:     INFO: Head node instance created on hyper18, waiting for cloud-init to start. 
+
+00:43:30:     INFO: Floating IP of the primary head node: 10.63.81.55 
+
+00:44:01:     INFO: Head node cloud-init: Started. 
+
+00:44:01:     INFO: Head node cloud-init: Setting up eth1. 
+
+00:44:01:     INFO: Head node cloud-init: Enabling password authentication. 
+
+00:44:01:     INFO: Head node cloud-init: Running prebs commands. 
+
+00:44:01:     INFO: Head node cloud-init: Running cm-bright-setup. 
+
+00:44:06:     INFO: cm-bright-setup: Stage 'Request License' started. 
+
+00:44:09:     INFO: cm-bright-setup: Stage 'Request License' completed. 
+
+00:44:09:     INFO: cm-bright-setup: Stage 'Init CMDaemon' started. 
+
+00:44:33:     INFO: cm-bright-setup: Stage 'Init CMDaemon' completed. 
+
+00:44:34:     INFO: cm-bright-setup: Stage 'Create And Install Certificates' started. 
+
+00:44:36:     INFO: cm-bright-setup: Stage 'Create And Install Certificates' completed. 
+
+00:44:40:     INFO: cm-bright-setup: Stage 'Wait For CMDaemon' started. 
+
+00:45:46:     INFO: cm-bright-setup: Stage 'Wait For CMDaemon' completed. 
+
+00:45:47:     INFO: Head node cloud-init: cm-bright-setup complete. 
+
+00:45:47:     INFO: Head node cloud-init: Waiting for CMDaemon to be ready. 
+
+00:45:47:     INFO: Head node cloud-init: CMDaemon is ready. 
+
+00:45:47:     INFO: Head node cloud-init: Complete. 
+
+00:45:48:  WARNING: File '/home/jjang/.ssh/config' was not found, continuing with an empty configuration. 
+
+00:45:48:     INFO: Waiting for sshd: 10.63.81.55 port 22 (timeout 900 seconds) 
+
+00:45:51:     INFO: --------------------------------------------------------------------- 
+
+00:45:51:     INFO: Cluster has been created successfully! You can now connect to it. 
+
+00:45:51:     INFO: Note: it might take several minutes for compute nodes to boot UP 
+
+00:45:51:     INFO: --------------------------------------------------------- 
+
+00:45:51:     INFO:       Cluster:  jjang-b110-u2204-03-31                    
+
+00:45:51:     INFO: --------------------------------------------------------- 
+
+00:45:51:     INFO:  Time it took:  02:39                                     
+
+00:45:51:     INFO:            IP:  10.63.81.55 - hyper18                     
+
+00:45:51:     INFO:    SSH string:  ssh 1 (alias defined in '~/.ssh/config')  
+
+00:45:51:     INFO:       Warning:  SSH password authentication enabled       
+
+00:45:51:     INFO:      Password:  system                                    
+
+00:45:51:     INFO: --------------------------------------------------------- 
+
+ 
+
+ 
+
+jjang@krusty5:~$ quotas 
+
+00:47:06 Fetching quotas for project: jjang-project 
+
+Quotas for: jjang-project 
+
+RAM             512GB / 512GB     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX 100% 
+
+CPU                48 / 100       XXXXXXXXXXXXXX................ 48% 
+
+VMs                 1 / 30        X............................. 3% 
+
+Volumes             1 / 50        .............................. 2% 
+
+Gigabytes       256GB / 2000GB    XXX........................... 13% 
+
+ 
+
+ 
+
+hint: see here for more info https://nvidia.atlassian.net/wiki/spaces/DGXCLD/pages/3174333797/Krusty+Resource+Quotas  
+
+ 
+
+ 
+
+jjang@krusty5:~$ cod cluster list 
+
+00:47:14:     INFO: Please wait... 
+
++-----+------------------------+-------------+--------------------------+-------------+------------------------+-----------+----------+ 
+
+| SSH | Cluster (stack) name   | IP          | Created (age)            | Head Status | Head Image             | Image age | CMD rev. | 
+
++-----+------------------------+-------------+--------------------------+-------------+------------------------+-----------+----------+ 
+
+| 1   | jjang-b110-u2204-03-31 | 10.63.81.55 | 2026-03-31 00:43 (0h 4m) | ACTIVE      | bcmh-ubuntu2204-11.0-9 | 12d 13h   | 164369   | 
+
++-----+------------------------+-------------+--------------------------+-------------+------------------------+-----------+----------+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[ssh log into Krusty VMs] 
+
+ 
+
+ 
+
+ 
+
+ 
+
+jjang@jjang-ubuntu:~$ ssh jjang@krusty5.nvidia.com 
+
+╭───────────────────────────────────────────────────────────────────────────╮ 
+
+│ Welcome to krusty5! (Santa Clara, CA, USA)           Slack: #bcm-krusty   │ 
+
+│ Tools: 'cod', 'icod', 'os-gpus', 'os-servers', 'openstack'                │ 
+
+│ Online docs: krusty.nvidia.com/docs/quickstart.html                       │ 
+
+│ For CLI help run: 'docs'                                                  │ 
+
+╰───────────────────────────────────────────────────────────────────────────╯ 
+
+Last login: Tue Mar 31 00:27:38 2026 from 10.221.57.44 
+
+jjang@krusty5:~$ ssh root@10.63.81.55 
+
+Warning: Permanently added '10.63.81.55' (ED25519) to the list of known hosts. 
+
+Welcome to Ubuntu 22.04.4 LTS (GNU/Linux 5.15.0-113-generic x86_64) 
+
+ 
+
+ 
+
+ * Documentation:  https://help.ubuntu.com 
+
+ * Management:     https://landscape.canonical.com 
+
+ * Support:        https://ubuntu.com/pro 
+
+ 
+
+ 
+
+Expanded Security Maintenance for Applications is not enabled. 
+
+ 
+
+ 
+
+372 updates can be applied immediately. 
+
+282 of these updates are standard security updates. 
+
+To see these additional updates run: apt list --upgradable 
+
+ 
+
+ 
+
+9 additional security updates can be applied with ESM Apps. 
+
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm 
+
+ 
+
+ 
+
+ 
+
+ 
+
+The list of available updates is more than a week old. 
+
+To check for new updates run: sudo apt update 
+
+ 
+
+ 
+
+Welcome to Base Command Manager 11.0  
+
+  
+
+                                        Based on Ubuntu Jammy Jellyfish 22.04 
+
+                                                    Cluster Manager ID: #00000 
+
+ 
+
+ 
+
+Use the following commands to adjust your environment:                         
+
+  
+
+'module avail'            - show available modules                             
+
+'module add <module>'     - adds a module to your environment for this session 
+
+'module initadd <module>' - configure module to be loaded at every login 
+
+                            (Note: initadd is available only for Tcl modules) 
+
+  
+
+------------------------------------------------------------------------------- 
+
+ 
+
+ 
+
+Node Status: running in active master mode 
+
+ 
+
+ 
+
+------------------------------------------------------------------------------- 
+
+Cluster Manager license expiration date: 01/Jul/2026, time remaining: 13w 1d 
+
+root@jjang-b110-u2204-03-31:~# free -h 
+
+               total        used        free      shared  buff/cache   available 
+
+Mem:           503Gi       2.3Gi       499Gi        17Mi       2.1Gi       497Gi 
+
+Swap:             0B          0B          0B 
+
+root@jjang-b110-u2204-03-31:~# df -h 
+
+Filesystem      Size  Used Avail Use% Mounted on 
+
+tmpfs            51G  1.4M   51G   1% /run 
+
+/dev/vda3       256G   31G  226G  12% / 
+
+tmpfs           252G     0  252G   0% /dev/shm 
+
+tmpfs           5.0M     0  5.0M   0% /run/lock 
+
+/dev/vda2       253M  8.3M  245M   4% /boot/efi 
+
+tmpfs            51G  4.0K   51G   1% /run/user/0 
+
+root@jjang-b110-u2204-03-31:~# lscpu 
+
+Architecture:            x86_64 
+
+  CPU op-mode(s):        32-bit, 64-bit 
+
+  Address sizes:         52 bits physical, 57 bits virtual 
+
+  Byte Order:            Little Endian 
+
+CPU(s):                  48 
+
+  On-line CPU(s) list:   0-47 
+
+Vendor ID:               AuthenticAMD 
+
+  Model name:            AMD EPYC 9554 64-Core Processor 
+
+    CPU family:          25 
+
+    Model:               17 
+
+    Thread(s) per core:  1 
+
+    Core(s) per socket:  48 
+
+    Socket(s):           1 
+
+    Stepping:            1 
+
+    BogoMIPS:            6200.00 
+
+    Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb 
+
+                          rdtscp lm rep_good nopl cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadl 
+
+                         ine_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw perfctr_core  
+
+                         invpcid_single ssbd ibrs ibpb stibp vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx51 
+
+                         2ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves avx512_bf16 clzero xsaveerptr wbnoinvd arat npt  
+
+                         lbrv nrip_save tsc_scale vmcb_clean flushbyasid pausefilter pfthreshold v_vmsave_vmload vgif avx512vbmi umip pku ospke avx512_vbmi2 gfn 
+
+                         i vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq la57 rdpid fsrm arch_capabilities 
+
+Virtualization features:  
+
+  Virtualization:        AMD-V 
+
+  Hypervisor vendor:     KVM 
+
+  Virtualization type:   full 
+
+Caches (sum of all):      
+
+  L1d:                   3 MiB (48 instances) 
+
+  L1i:                   3 MiB (48 instances) 
+
+  L2:                    24 MiB (48 instances) 
+
+  L3:                    768 MiB (48 instances) 
+
+NUMA:                     
+
+  NUMA node(s):          1 
+
+  NUMA node0 CPU(s):     0-47 
+
+Vulnerabilities:          
+
+  Gather data sampling:  Not affected 
+
+  Itlb multihit:         Not affected 
+
+  L1tf:                  Not affected 
+
+  Mds:                   Not affected 
+
+  Meltdown:              Not affected 
+
+  Mmio stale data:       Not affected 
+
+  Retbleed:              Not affected 
+
+  Spec rstack overflow:  Mitigation; safe RET 
+
+  Spec store bypass:     Mitigation; Speculative Store Bypass disabled via prctl and seccomp 
+
+  Spectre v1:            Mitigation; usercopy/swapgs barriers and __user pointer sanitization 
+
+  Spectre v2:            Mitigation; Retpolines; IBPB conditional; IBRS_FW; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected 
+
+  Srbds:                 Not affected 
+
+  Tsx async abort:       Not affected 
+
+ 
+
+ 
+
+ 
+
+ 
+
+[To download Strata 5.0 on Krusty VM] 
+
+ 
+
+ 
+
+Refer to https://nvidia.atlassian.net/wiki/spaces/DPS/pages/2958067392/Release+Note+-+Strata+Release_5.0 
+
+ 
+
+ 
+
+# 1. Clone repository 
+
+cd $HOME/ 
+
+ 
+
+ 
+
+git clone https://gitlab-master.nvidia.com/systemsim/system-sim-weaver.git 
+
+cd system-sim-weaver 
+
+ 
+
+ 
+
+# 2. Install Ansible (includes community.docker collection) 
+
+sudo apt install -y ansible 
+
+ 
+
+ 
+
+# 3. Install host dependencies (if needed) 
+
+sudo apt install -y python3.11 
+
+ 
+
+ 
+
+ 
+
+ 
+
+# 4. To download the VM containers tarball from URM, you need to setup your token one time on URM Artifactory. Follow below link to generate your token- 
+
+https://nvidia.atlassian.net/wiki/display/DPS/Generate+token+for+URM+Artifactory 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+cat > ~/.netrc << 'EOF' 
+
+machine urm.nvidia.com 
+
+    login jjang 
+
+    password cmVmdGtuOjAxOjE3OTA4MzgzNjk6UnhuNmRLZVgxWDNSUmRhUm5uZ3V1UlhwQlpi 
+
+EOF 
+
+ 
+
+ 
+
+# Set permissions (required!) 
+
+chmod 600 ~/.netrc 
+
+ 
+
+ 
+
+ 
+
+ 
+
+cat > ~/.netrc << 'EOF' 
+
+machine urm.nvidia.com 
+
+    login jjang  
+
+    password cmVmdGtuOjAxOjE3OTA4MzgzNjk6UnhuNmRLZVgxWDNSUmRhUm5uZ3V1UlhwQlpi  
+
+EOF 
+
+ 
+
+[How to install and run VRU 3.0 on Krusty VM] 
+
+ 
+
+root@jjang-b110-u2204-03-31:~/weaver# ansible-playbook -i inventories/strata_3p4.yml weaver.yml -e config=strata_3p4 -e synopsys_license=true 
+
+ 
+
+Note: add "-e synopsys_license=true" if you run Strata 5.0 on Krusty VM 
+
+ 
+
+ 
+
+[How to install and run VRU 3.0 on Krusty VM] 
+
+ 
+
+root@jjang-b110-u2204-03-31:~/weaver# ansible-playbook -i inventories/vru_mgx_3p0.yml weaver.yml -e config=vru_mgx_3p0 -e synopsys_license=true 
