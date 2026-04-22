@@ -56,3 +56,23 @@ Cannot stat /root/.ssh/known_hosts: No such file or directory
 [2026-04-21 06:12:08 UTC] Script is running...
 [2026-04-21 06:13:08 UTC] Script is running...
 
+
+
+root@ubuntu-L1:/home/nvidia# time sudo sh NVIDIA-Linux-aarch64-DVS-internal.run -m=kernel --install-libglvnd -sq --no-drm 
+Verifying archive integrity... OK
+Uncompressing NVIDIA Accelerated Graphics Driver for Linux-aarch64 615.00..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+
+WARNING: The nvidia-drm module will not be installed. As a result, DRM-KMS will not function with this installation of the NVIDIA driver.
+
+
+WARNING: nvidia-installer was forced to guess the X library path '/usr/lib' and X module path '/usr/lib/xorg/modules'; these paths were not queryable from the system.  If X fails to find the NVIDIA X driver module, please install the `pkg-config`
+         utility and the X.Org SDK/development package for your distribution and reinstall the driver.
+
+
+WARNING: This NVIDIA driver package includes Vulkan components, but no Vulkan ICD loader was detected on this system. The NVIDIA Vulkan ICD will not function without the loader. Most distributions package the Vulkan loader; try installing the
+         "vulkan-loader", "vulkan-icd-loader", or "libvulkan1" package.
+
+
+real	99m3.209s
+user	0m0.020s
+sys	0m0.056s
