@@ -1,0 +1,58 @@
+Username: jjang 
+
+Host: krusty5.nvidia.com 
+
+SSH command: ssh jjang@krusty5.nvidia.com 
+
+ 
+
+ jjang@krusty5:~$ cod cluster list 
+
+00:47:14:     INFO: Please wait... 
+
++-----+------------------------+-------------+--------------------------+-------------+------------------------+-----------+----------+ 
+
+| SSH | Cluster (stack) name   | IP          | Created (age)            | Head Status | Head Image             | Image age | CMD rev. | 
+
++-----+------------------------+-------------+--------------------------+-------------+------------------------+-----------+----------+ 
+
+| 1   | jjang-b110-u2204-03-31 | 10.63.81.55 | 2026-03-31 00:43 (0h 4m) | ACTIVE      | bcmh-ubuntu2204-11.0-9 | 12d 13h   | 164369   | 
+
++-----+------------------------+-------------+--------------------------+-------------+------------------------+-----------+----------+ 
+
+ 
+
+ # ssh root@10.63.81.55
+
+
+https://nvidia.atlassian.net/wiki/spaces/DPS/pages/3283038192/Release+Notes+-+VRU+Release_5.0
+
+
+# Setup ~/.netrc for Artifactory Access, replace <YOUR_USERNAME> and <YOUR_API_TOKEN> with above ones you get from above step.
+cat > ~/.netrc << 'EOF'
+machine artifactory.nvidia.com
+login jjang
+password cmVmdGtuOjAxOjE4MDgzNzc5Nzk6NnVvcUJ1SWVOaUtsMGFmbXNheWlBUENueE02
+EOF
+
+# Set permissions (required!)
+chmod 600 ~/.netrc
+
+
+
+
+git clone https://gitlab-master.nvidia.com/systemsim/weaver.git
+cd weaver
+git checkout rel/vru/5p0
+
+
+# Run simulation until physical link-up for CG2Q (inband-only)
+ansible-playbook -i inventories/vru.yml weaver.yml \
+    -e config=vru_cg2q -e platform=vru \
+    --tags prepare,start_containers,link_physically
+
+
+# Run simulation until physical link-up for CG2Q (inband-only) on Krusty VM
+ansible-playbook -i inventories/vru.yml weaver.yml -e config=vru_cg2q -e platform=vru -e synopsys_license=true --tags prepare,start_containers,link_physically
+
+Note: add "-e synopsys_license=true" if you run VRU 5.0 on Krusty VM 
