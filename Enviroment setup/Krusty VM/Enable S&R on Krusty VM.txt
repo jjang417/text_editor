@@ -1,0 +1,396 @@
+<CRIU setup> 
+
+ 
+
+Download CRIU and CRUN source code package by git clone ssh://git@gitlab-master.nvidia.com:12051/systemsim/systemsim_criu.git 
+
+ 
+
+Follow the https://gitlab-master.nvidia.com/systemsim/systemsim_criu/-/blob/main/podman/Readme.txt?ref_type=heads to build and install crun, criu and config files on Krusty VM. 
+
+ 
+
+ 
+
+<Load C1G2 compute tray docker image by podman> 
+
+ 
+
+git clone https://gitlab-master.nvidia.com/systemsim/weaver.git 
+
+cd weaver 
+
+ 
+
+# To donwload Strata 5.0 docker images 
+
+ansible-playbook -i inventories/strata_3p4.yml weaver.yml -e config=strata_3p4 -e synopsys_license=true 
+
+ 
+
+# To remove all docker containers 
+
+docker rm -f $(docker ps -aq) 
+
+ 
+
+ 
+
+<In /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch> 
+
+#Load Strata C1G2 docker image    
+
+sudo podman load --input c1g2_docker_img.tgz 
+
+ 
+
+#Change the C1G2 docker image name to  c1g2_docker_img:latest 
+
+podman tag localhost/5.0:latest c1g2_docker_img:latest 
+
+ 
+
+podman images 
+
+REPOSITORY                 TAG         IMAGE ID      CREATED       SIZE 
+
+localhost/5.0              latest      d30dbcbb946f  2 months ago  44.5 GB 
+
+localhost/c1g2_docker_img  latest      d30dbcbb946f  2 months ago  44.5 GB 
+
+ 
+
+<In /root/podman_criu/systemsim_criu/podman> 
+
+bash tap_to_containers_via_docker0.sh --cleanup-all 
+
+ 
+
+sudo podman run -d --runtime=/usr/local/bin/crun --privileged --name=c1g2_container_01 -v /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/custom_config:/root/custom_config -v /boot:/boot:ro -v /lib/modules:/lib/modules:ro --ulimit msgqueue=-1:-1 -e SNPSLMD_LICENSE_FILE="1711@dc7-lic-35:1711@lic-34:1711@dc6-lic-06:1711@dc6-lic-07:1711@synopsys-lic-02:1711@dc7-lic-01:1711@dc7-lic-03:1711@dc7-lic-0" -e LM_LICENSE_FILE="1711@dc7-lic-35:1711@lic-34:1711@dc6-lic-06:1711@dc6-lic-07:1711@synopsys-lic-02:1711@dc7-lic-01:1711@dc7-lic-03:1711@dc7-lic-0" -e ARMLMD_LICENSE_FILE="8224@dc7-arm-lic-01:8224@dc6-arm-lic-02:8224@indc-lic-01:8224@fi-vmlic-01" -e CSL="-invalid_xtl_register_access,[disable]csl_grp_host_error_pri_intr,[noabort]assert,[disable]sim_tasker.cpp,[enable;debuglevel:20;flush]chiplib_e,[enable;flush]CPUModel,[enable]MSIX,NVLC,NVLPW," -e GUEST_IP=172.17.0.101 --add-host dc7-lic-35:10.126.127.39 --add-host lic-34:10.126.124.43 --add-host dc6-lic-06:10.128.66.182 --add-host dc6-lic-07:10.128.66.183 --add-host synopsys-lic-02:10.128.65.11 --add-host dc7-lic-01:10.126.127.66 --add-host dc7-lic-03:10.126.127.69 --add-host dc7-lic-0:10.126.127.66 --add-host dc7-arm-lic-01:10.126.127.70 --add-host dc6-arm-lic-02:10.152.55.166 --add-host indc-lic-01:10.25.231.230 --add-host fi-vmlic-01:10.64.141.50 c1g2_docker_img:latest --component-id SCSIM_TB500_0 --client-id "GPU_0,GPU_1" --config-paths "/root/custom_config/devproc_gr102_conf_0.json,/root/custom_config/devproc_gr102_conf_1.json" 
+
+ 
+
+bash tap_to_containers_via_docker0.sh --force c1g2_container_01 
+
+ 
+
+ 
+
+<Trigger C1G2 snapshot> 
+
+root@jjang-b110-u2204-03-31:~/podman_criu/systemsim_criu/podman# podman ps 
+
+CONTAINER ID  IMAGE                             COMMAND               CREATED         STATUS             PORTS       NAMES 
+
+080364a67ede  localhost/c1g2_docker_img:latest  --component-id SC...  12 minutes ago  Up 12 minutes ago              c1g2_container_01 
+
+ 
+
+root@jjang-b110-u2204-03-31:~/podman_criu/systemsim_criu/podman# podman container checkpoint --tcp-established c1g2_container_01 
+
+080364a67edec86794c2129e0783d756774c351a2ca082b272bc21a1d52cc847 
+
+ 
+
+root@jjang-b110-u2204-03-31:~/podman_criu/systemsim_criu/podman# podman ps -a 
+
+CONTAINER ID  IMAGE                             COMMAND               CREATED         STATUS                    PORTS       NAMES 
+
+080364a67ede  localhost/c1g2_docker_img:latest  --component-id SC...  13 minutes ago  Exited (0) 6 seconds ago              c1g2_container_01 
+
+ 
+
+ 
+
+<To restore C1G2 container> 
+
+root@jjang-b110-u2204-03-31:~/podman_criu/systemsim_criu/podman# restore-container.sh c1g2_container_01 
+
+[restore-container] Restoring: c1g2_container_01 
+
+080364a67edec86794c2129e0783d756774c351a2ca082b272bc21a1d52cc847 
+
+root@jjang-b110-u2204-03-31:~/podman_criu/systemsim_criu/podman# podman ps -a 
+
+CONTAINER ID  IMAGE                             COMMAND               CREATED         STATUS             PORTS       NAMES 
+
+080364a67ede  localhost/c1g2_docker_img:latest  --component-id SC...  14 minutes ago  Up 14 minutes ago              c1g2_container_01 
+
+ 
+
+ 
+
+ssh nvidia@172.17.0.101 
+
+Last login: Mon Dec 22 13:12:29 2025 from 172.17.0.1 
+
+nvidia@ubuntu-L1:~$ sudo lspci -nn 
+
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06) 
+
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06) 
+
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01) 
+
+0003:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06) 
+
+0003:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:30bf] (rev a1) 
+
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06) 
+
+0005:01:00.0 CXL [0502]: NVIDIA Corporation Device [10de:bee0] (rev 01) 
+
+0006:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06) 
+
+0006:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:30bf] (rev a1) 
+
+ 
+
+ 
+
+[To change "docker run" to "podman run" in /strata_compute-vera_switch/chipsim/chipsim_container_run.py] 
+
+ 
+
+Update(~/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/chipsim_container_run.py) 
+
+  ⎿  Added 23 lines, removed 23 lines 
+
+      2637   
+
+      2638          if PODMAN_MODE: 
+
+      2639              docker_run_cmd = ["sudo", "podman", "run", 
+
+      2640 -                          "-d", "--privileged",                                                                                               
+
+      2641 -                          "--runtime=/usr/local/bin/crun",                                                                                    
+
+      2642 -                          "--device=/dev/kvm",                                                                                                
+
+      2643 -                          "--device=/dev/net/tun",                                                                                            
+
+      2644 -                          "--cap-add", "SYS_ADMIN",                                                                                           
+
+      2645 -                          "--cap-add=NET_ADMIN",                                                                                              
+
+      2646 -                          "--cap-add=SYS_NICE",                                                                                               
+
+      2647 -                          "--cap-add", "SYS_RESOURCE",                                                                                        
+
+      2648 -                          "--cap-add", "SYS_PTRACE",                                                                                          
+
+      2649 -                          "--hostname=chipsim_cont",                                                                                          
+
+      2650 -                          "--name", self.container_name,                                                                                      
+
+      2651 -                          "-v", "/sys/fs/cgroup:/sys/fs/cgroup",                                                                              
+
+      2652 -                          "-v", "/dev:/dev",                                                                                                  
+
+      2653 -                          "-e", f"VCRS_PORT={vcrs_port}",                                                                                     
+
+      2654 -                          "-e", f"CHIP_TYPE={self.chip_type.value}",                                                                          
+
+      2655 -                          "-e", f"IS_NVLINK={str(self._is_nvlink).lower()}",                                                                  
+
+      2656 -                          "-e", f"LIBCLIENT={CcrPaths.LIBCLIENT64}",                                                                          
+
+      2657 -                          "-e", f"LIBCLIENT_NO_GW_IN_C_IMPL={CcrPaths.LIBCLIENT64_NO_GW_IN_C_IMPL}",                                          
+
+      2658 -                          "-e", f"NUM_ASICS={self._num_asics}",                                                                               
+
+      2659 -                          "-e", "FW_LOG_LEVEL=INFO",                                                                                          
+
+      2660 -                          "-e", f"IS_GPU={str(self.chip_type in GPU_DEV).lower()}",                                                           
+
+      2661 -                          "-p", f"{api_port_bind}:{EXTERNAL_API_PORT}",                                                                       
+
+      2662 -                          "-p", f"{libvirt_port_bind}:{EXTERNAL_LIBVIRT_PORT}"]                                                               
+
+      2640 +                             "-d", "--privileged",                                                                                            
+
+      2641 +                             "--runtime=/usr/local/bin/crun",                                                                                 
+
+      2642 +                             "--device=/dev/kvm",                                                                                             
+
+      2643 +                             "--device=/dev/net/tun",                                                                                         
+
+      2644 +                             "--cap-add", "SYS_ADMIN",                                                                                        
+
+      2645 +                             "--cap-add=NET_ADMIN",                                                                                           
+
+      2646 +                             "--cap-add=SYS_NICE",                                                                                            
+
+      2647 +                             "--cap-add", "SYS_RESOURCE",                                                                                     
+
+      2648 +                             "--cap-add", "SYS_PTRACE",                                                                                       
+
+      2649 +                             "--hostname=chipsim_cont",                                                                                       
+
+      2650 +                             "--name", self.container_name,                                                                                   
+
+      2651 +                             "-v", "/sys/fs/cgroup:/sys/fs/cgroup",                                                                           
+
+      2652 +                             "-v", "/dev:/dev",                                                                                               
+
+      2653 +                             "-e", f"VCRS_PORT={vcrs_port}",                                                                                  
+
+      2654 +                             "-e", f"CHIP_TYPE={self.chip_type.value}",                                                                       
+
+      2655 +                             "-e", f"IS_NVLINK={str(self._is_nvlink).lower()}",                                                               
+
+      2656 +                             "-e", f"LIBCLIENT={CcrPaths.LIBCLIENT64}",                                                                       
+
+      2657 +                             "-e", f"LIBCLIENT_NO_GW_IN_C_IMPL={CcrPaths.LIBCLIENT64_NO_GW_IN_C_IMPL}",                                       
+
+      2658 +                             "-e", f"NUM_ASICS={self._num_asics}",                                                                            
+
+      2659 +                             "-e", "FW_LOG_LEVEL=INFO",                                                                                       
+
+      2660 +                             "-e", f"IS_GPU={str(self.chip_type in GPU_DEV).lower()}",                                                        
+
+      2661 +                             "-p", f"{api_port_bind}:{EXTERNAL_API_PORT}",                                                                    
+
+      2662 +                             "-p", f"{libvirt_port_bind}:{EXTERNAL_LIBVIRT_PORT}"]                    
+
+ 
+
+ 
+
+[To load chipsim switch container image by podman] 
+
+ 
+
+<In /root/weaver/playbooks/strata_3p4> 
+
+podman load --input ./strata_compute-vera_switch/chipsim/chipsim_master-1.3.75.tgz 
+
+ 
+
+podman tag localhost/master-1.3.75:latest harbor.mellanox.com/chipsim/master/ib:master-1.3.75 
+
+REPOSITORY                                         TAG                   IMAGE ID      CREATED       SIZE 
+
+localhost/master-1.3.75                           latest                  c63eb25bd044  4 months ago  12.5 GB 
+
+harbor.mellanox.com/chipsim/master/ib  master-1.3.75    c63eb25bd044  4 months ago  12.5 GB 
+
+ 
+
+ 
+
+/usr/bin/python3.11 ./strata_compute-vera_switch/chipsim/prep_ext_env_for_cs.py --chipsim_scripts_path ./strata_compute-vera_switch/chipsim/ 
+
+ 
+
+/usr/bin/python3.11 ./strata_compute-vera_switch/chipsim/chipsim_container_run.py -t starling -r --cfg_profile ib_single_swid --pelican_tag 2018_0174-002 --docker_image harbor.mellanox.com/chipsim/master/ib:master-1.3.75 --port 7500 --telnet_port 60777 --isolated --network bridge --setup_name CS_QM4_0 --guid 1 --vm_image ./strata_compute-vera_switch/chipsim/nvos-disk-amd64-25.03.0021.img --vm_image_local_copy --is_sata_hdd --vm_ram 16 --board rosalind_nso --is_nvlink 
+
+ 
+
+ 
+
+ 
+
+Back up update Chipsim docker image to "/root/weaver/playbooks/strata_3p4/chipsim_master-1.3.75-patched.tar " 
+
+ 
+
+root@jjang-b110-u2204-03-31:~/weaver/playbooks/strata_3p4# /usr/bin/python3.11 ./strata_compute-vera_switch/chipsim/chipsim_container_run.py -t starling -r --cfg_profile ib_single_swid --pelican_tag 2018_0174-002 --docker_image harbor.mellanox.com/chipsim/master/ib:master-1.3.75-patched --port 7500 --telnet_port 60777 --isolated --network bridge --setup_name CS_QM4_0 --guid 1 --vm_image ./strata_compute-vera_switch/chipsim/nvos-disk-amd64-25.03.0021.img --vm_image_local_copy --is_sata_hdd --vm_ram 16 --board rosalind_nso --is_nvlink 
+
+=== Podman network configuration === 
+
+  Detected bridge network: 10.88.0.0/16 
+
+  Gateway: 10.88.0.1 
+
+Starting ChipSim (container setup in progress...) 
+
+→ Initializing container... 
+
+  ✓ Container 
+
+→ Starting ChipSim setup (51s) 
+
+  ✓ Init Setup (4/4 ASICs ready) 
+
+  ✓ ChipSim (4/4 ASICs ready) 
+
+  ✓ FW Main (4/4 ASICs ready) 
+
+  
+
+=== NVIDIA ChipSim Configuration === 
+
+System Information: 
+
+    -------------------------------------------------- 
+
+  Chip Type: starling 
+
+  Board Type: rosalind_nso 
+
+  Number of ASICs: 4 
+
+  VM Name: chipsim 
+
+  Container: CS_QM4_0 
+
+  Ports: [7500 (Asic 0), 9000 (Asic 1), 10500 (Asic 2), 12000 (Asic 3)] 
+
+  ChipSim Version: master-1.3.75 
+
+  FW Pointer: 2018_0174-002 
+
+  SimX Version: 26.1-1061 
+
+  CCR Version: INTERNAL_CCR_VER 
+
+  VM IP: 10.88.0.119 
+
+  VM Gateway: 10.88.0.1 
+
+  VM Subnet: 16 
+
+  
+
+  Setup Resources 
+
+  Docker Image: harbor.mellanox.com/chipsim/master/ib:master-1.3.75-patched 
+
+  VM Image: ./strata_compute-vera_switch/chipsim/nvos-disk-amd64-25.03.0021.img 
+
+  Logs (on container): /tmp/chipsim/starling/ 
+
+  ChipSim Path: /auto/sw/release/fwshared/chipsim/releases/master-1.3.75 
+
+  FW Path: /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/switch_fw 
+
+  FW ADB: /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/switch_fw/starling_def.adb 
+
+  INI Directory: /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/switch_fw/ 
+
+  Lane Reversals: /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/switch_fw/starling_lane_reversals.json 
+
+  FEC Dumps: /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/switch_fw 
+
+  Supported EMADs File: supported_emads 
+
+  
+
+──────────────────────────────────────────────────────────── 
+
+Documentation: https://confluence.nvidia.com/pages/viewpage.action?spaceKey=SW&title=ChipSim+in+Docker+usage+guide 
+
+Testing: sudo <path_to_pelican_repo>/dt/tests/chipsim/chipsim_ci.py -f starling -a /root/weaver/playbooks/strata_3p4/strata_compute-vera_switch/chipsim/switch_fw/starling_def.adb --test_type NVL 
+
+Container: podman exec -it CS_QM4_0 bash 
+
+VM Access: ssh -X root@10.88.0.119 
+
+Container IP: 10.88.0.19 
+
+ 
+
+ 
+ 
