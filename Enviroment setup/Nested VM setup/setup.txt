@@ -1,0 +1,74 @@
+
+
+  Step 1 — Kick it off                                                                                                               
+                                                                                                                                     
+  sudo /root/nested_qemu/setup-host.sh                                                                                               
+                                                                                                                                     
+  Step 2 — Two prompts you'll see
+                                                                                                                                     
+  Prompt #1 (in phase 3, ~30s in):                                                                                                   
+  Need: https://releases.ubuntu.com/22.04.5/ubuntu-22.04.5-live-server-amd64.iso  (~2 GB)
+  Download now? [y/N]                                                                                                                
+  → press y. Wait ~1–3 min for the download.                                                                                         
+                                                                                                                                     
+  Prompt #2 (in phase 5, ~3 min in):                                                                                                 
+  Credentials baked into the install:                                                                                                
+    username: nvidia                                                                                                                 
+    password: nvidia   (hashed with SHA-512 in seed)                                                                                 
+    hostname: l1-ubuntu                             
+  Hypervisor stack (qemu-kvm, libvirt) will be preinstalled inside the L1.                                                           
+  Proceed with unattended install? [y/N]                                  
+  → press y.                                                                                                                         
+                                                                                                                                     
+  Step 3 — Watch the install (~10–15 min)                                                                                            
+                                                                                                                                     
+  Install logs will scroll by on serial console. You'll see kernel boot, then subiquity (Ubuntu's installer) doing partitioning,     
+  package install, etc. Don't touch anything. It auto-powers-off when done.
+                                                                                                                                     
+  If it stalls for >5 min on the same line, that's likely a problem — let me know what you see.                                      
+   
+  Step 4 — Phase 6 starts the 256 GiB L1                                                                                             
+                                                            
+  After autoinstall finishes you'll see:                                                                                             
+  ===== 6/6 Define + start libvirt domain =====             
+  Domain l1-ubuntu defined from /root/nested_qemu/l1-guest.xml
+  Started 'l1-ubuntu'.                                                                                                               
+                                                                                                                                     
+  ===== All set =====                                                                                                                
+    Login as: nvidia / nvidia                                                                                                        
+    ...                                                                                                                              
+                                                                                                                                     
+  Step 5 — Log in to verify
+                                                                                                                                     
+  sudo virsh console l1-ubuntu                              
+  # wait for the login prompt (may take 30-60s for L1 to finish booting)                                                             
+  # log in: nvidia / nvidia                                                                                                          
+  # ctrl-] to exit when done 
+
+  Or via SSH:                                                                                                                        
+    sudo virsh net-dhcp-leases default     # find L1's IP
+    ssh nvidia@192.168.122.<x>                                                                                                           
+                                                                                                                                     
+  Inside the L1, sanity-check:                                                                                                       
+  free -h                        # should show ~256 GiB total
+  nproc                          # should show 16                                                                                    
+  ip addr show                   # should have an IP on enp0s2 or similar
+  ping -c2 8.8.8.8               # should work                                                                                       
+  virsh version                  # confirms libvirt is installed inside L1                                                           
+  ls /dev/kvm                    # confirms nested KVM is exposed                                                                    
+                                                                                                                                     
+  Step 6 — Smoke-test save/restore (do this before trusting it)                                                                      
+                                                                                                                                     
+  Back on L0 (after exiting virsh console):                                                                                          
+  sudo virsh save l1-ubuntu /root/nested_qemu/test.save --bypass-cache                                                               
+  ls -lh /root/nested_qemu/test.save     # check file size                                                                           
+  sudo virsh restore /root/nested_qemu/test.save --bypass-cache                                                                      
+  sudo virsh console l1-ubuntu           # reconnect, run `uptime` — should not have rebooted                                        
+  rm /root/nested_qemu/test.save                                                                                                     
+                                                                                                                                     
+  If this round-trip works clean, you're ready to spin up L2 VMs.                                                                    
+                                                                                                                                     
+  ---                                                                                                                                
+  Go ahead and run the script. Tell me when you hit a prompt, when phase 5 starts, when it finishes, or if anything looks wrong —
+  I'll help interpret the output.    
+
