@@ -131,25 +131,366 @@ Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-176-generic x86_64)
   2. External snapshot revert (manual — libvirt doesn't auto-revert externals)                                                        
                                                                                                                                       
   Create snapshot (live, disk + memory):                                                                                              
-  sudo virsh snapshot-create-as l1-ubuntu \                                                                                           
-    --name snap1 \                         
-    --memspec file=/root/nested_qemu/snap1.mem,snapshot=external \                                                                    
-    --diskspec vda,file=/root/nested_qemu/L1_system.snap1.qcow2,snapshot=external \                                                   
-    --atomic                                                                                                                          
-                                                                                                                                      
+  sudo virsh snapshot-create-as l1-ubuntu --name snap1 --memspec file=/root/nested_qemu/snap1.mem,snapshot=external --diskspec vda,file=/root/nested_qemu/L1_system.snap1.qcow2,snapshot=external --atomic
+
   Revert (3 steps — VM must be shut off first):                                                                                       
   # a. stop VM if running                                                                                                             
   sudo virsh destroy l1-ubuntu
                                                                                                                                       
   # b. reset overlay to empty (discards all writes since snapshot)                                                                    
   sudo rm /root/nested_qemu/L1_system.snap1.qcow2                                                                                     
-  sudo qemu-img create -f qcow2 \                                                                                                     
-    -b /root/nested_qemu/L1_system.qcow2 -F qcow2 \                                                                                   
-    /root/nested_qemu/L1_system.snap1.qcow2                                                                                           
-                                           
-  # c. restore memory state                                                                                                           
+  sudo qemu-img create -f qcow2 -b /root/nested_qemu/L1_system.qcow2 -F qcow2 /root/nested_qemu/L1_system.snap1.qcow2                                                                                           
+
+  # c. restore memory state
   sudo virsh restore /root/nested_qemu/snap1.mem
-                                                                                                                                      
+
   Key difference: virsh save/restore is a single round-trip (save stops the VM). External snapshots stay live — the VM keeps running
-  after the snapshot — but reverting is manual.                                                                                       
+  after the snapshot — but reverting is manual.
+
+
+
+● Here are the commands. Run them on the host (not inside L1):                                                                                                                                                                                              
+                                                                                                                                                                                                                                                            
+  # 1. Sanity check: L1 VM is running, host has space, target paths are free.                                                                                                                                                                               
+  virsh list --all | grep l1-ubuntu                                                                                                                                                                                                                         
+  df -h /root/nested_qemu/                                                                                                                                                                                                                                  
+  ls /root/nested_qemu/L1_system.snap2.qcow2 /root/nested_qemu/snap2.mem 2>&1 | head -3                                                                                                                                                                     
+  # Expected: l1-ubuntu running; plenty of free space (you have ~9 TB);                                                                                                                                                                                     
+  # both target files should be "No such file or directory".                                                                                                                                                                                                
+                                                                                                                                                                                                                                                            
+  # 2. Take the live snapshot (memory + disk, atomic).                                                                                                                                                                                                      
+  sudo virsh snapshot-create-as l1-ubuntu --name snap2 --memspec file=/root/nested_qemu/snap2.mem,snapshot=external --diskspec vda,file=/root/nested_qemu/L1_system.snap2.qcow2,snapshot=external --atomic
+
+  # This pauses the VM briefly while RAM dumps to snap2.mem (can take minutes,                                                                                                                                                                              
+  # scales with how much RAM is actively used by L1 + nested VMs).                                                                                                                                                                                          
+  # When it finishes, you'll see "Domain snapshot snap2 created".                                                                                                                                                                                           
+                                                                                                                                                                                                                                                            
+  # 3. Verify the new chain.                                                                                                                                                                                                                                
+  virsh dumpxml l1-ubuntu | grep -A1 "<source file"
+  # Expected: source = L1_system.snap2.qcow2 (active), backed by snap1.qcow2.                                                                                                                                                                               
+                                                                                                                                                                                                                                                            
+  qemu-img info --backing-chain /root/nested_qemu/L1_system.snap2.qcow2 | head -30                                                                                                                                                                          
+  # Should show snap2  →  snap1  →  L1_system.qcow2.                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                            
+  ls -lh /root/nested_qemu/L1_system.snap2.qcow2 /root/nested_qemu/snap2.mem                                                                                                                                                                                
+  # snap2.qcow2 starts small; snap2.mem can be tens of GB.                                                                                                                                                                                                  
+                                                                                                                                                                                                                                                            
+  virsh snapshot-list l1-ubuntu                                                                                                                                                                                                                             
+  # Should list "snap2".                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                            
+  After step 2, the L1 VM keeps running normally — all new disk writes go to snap2.qcow2, while snap1.qcow2 is now read-only as a backing layer.                                                                                                            
    
+  To revert later: shut down L1, then virsh snapshot-revert l1-ubuntu snap2. Tell me how it goes or if any step errors.     
+
+
+❯ root@dl325g11-2067:~/nested_qemu# time sudo virsh snapshot-create-as l1-ubuntu --name snap2 --memspec file=/root/nested_qemu/snap2.mem,snapshot=external --diskspec vda,file=/root/nested_qemu/L1_system.snap2.qcow2,snapshot=external --atomic           
+  Domain snapshot snap2 created                                                                                                                                                                                                                             
+                                                                                                                                                                                                                                                            
+  real    3m55.415s                                                                                                                                                                                                                                         
+  user    0m0.007s                                                                                                                                                                                                                                          
+  sys    0m0.000s                                                                                                                                                                                                                                           
+  root@dl325g11-2067:~/nested_qemu# ls -alh                                                                                                                                                                                                                 
+  total 487G                                                                                                                                                                                                                                                
+  drwxr-xr-x  4 root root 4.0K Apr 28 05:12 .                                                                                                                                                                                                               
+  drwx------ 26 root root 4.0K Apr 28 03:55 ..                                                                                                                                                                                                              
+  drwxr-xr-x  2 root root 4.0K Apr 28 03:00 .claude                                                                                                                                                                                                         
+  -r--r--r--  1 root root 108M Apr 27 03:18 .initrd                                                                                                                                                                                                         
+  -rw-r--r--  1 root root    0 Apr 27 03:23 .install_done                                                                                                                                                                                                   
+  -r--r--r--  1 root root  12M Apr 27 03:18 .kernel                                                                                                                                                                                                         
+  -rw-r--r--  1 root root 1.4K Apr 27 03:50 l1-guest.xml                                                                                                                                                                                                    
+  -rw-r--r--  1 root root 193G Apr 28 03:54 L1_system.qcow2                                                                                                                                                                                                 
+  -rw-r--r--  1 root root 112G Apr 28 05:08 L1_system.snap1.qcow2                                                                                                                                                                                           
+  -rw-------  1 root root  21M Apr 28 05:13 L1_system.snap2.qcow2                                                                                                                                                                                           
+  -rw-r--r--  1 root root 364K Apr 27 03:18 .seed.iso                                                                                                                                                                                                       
+  drwxr-xr-x  2 root root 4.0K Apr 27 03:18 .seed-src                                                                                                                                                                                                       
+  -rwxr-xr-x  1 root root 7.5K Apr 27 03:17 setup-host.sh                                                                                                                                                                                                   
+  -rw-------  1 root root 5.9G Apr 27 09:23 snap1.mem                                                                                                                                                                                                       
+  -rw-------  1 root root 169G Apr 28 05:12 snap2.mem                                                                                                                                                                                                       
+  -rw-------  1 root root 5.7G Apr 27 03:54 test.save                                                                                                                                                                                                       
+  -rw-r--r--  1 root root 2.0G Sep 11  2024 ubuntu-22.04.5-live-server-amd64.iso                                                                                                                                                                            
+                                                                                                                                                                                                                                                            
+
+● Snapshot created cleanly. Quick summary:
+
+  ┌───────────────────────┬───────┬─────────────────────────────────────────┐                                                                                                                                                                               
+  │         File          │ Size  │                  Role                   │
+  ├───────────────────────┼───────┼─────────────────────────────────────────┤                                                                                                                                                                               
+  │ L1_system.qcow2       │ 193 G │ base (read-only)                        │
+  ├───────────────────────┼───────┼─────────────────────────────────────────┤
+  │ L1_system.snap1.qcow2 │ 112 G │ snap1 layer (now frozen, read-only)     │                                                                                                                                                                               
+  ├───────────────────────┼───────┼─────────────────────────────────────────┤                                                                                                                                                                               
+  │ L1_system.snap2.qcow2 │ 21 M  │ active overlay — all new writes go here │                                                                                                                                                                               
+  ├───────────────────────┼───────┼─────────────────────────────────────────┤                                                                                                                                                                               
+  │ snap2.mem             │ 169 G │ RAM dump captured at snapshot time      │
+  └───────────────────────┴───────┴─────────────────────────────────────────┘          
+
+
+
+❯ root@dl325g11-2067:~/nested_qemu# virsh snapshot-list l1-ubuntu                                                                                                                                                                                           
+   Name    Creation Time               State                                                                                                                                                                                                                
+  ----------------------------------------------                                                                                                                                                                                                            
+   snap1   2026-04-27 09:23:21 +0000   running                                                                                                                                                                                                              
+   snap2   2026-04-28 05:08:28 +0000   running                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                            
+
+● Both snapshots intact. You now have two restore points:
+
+  - snap1 (Apr 27 09:23) — earlier checkpoint, before today's debugging                                                                                                                                                                                     
+  - snap2 (Apr 28 05:08) — just now, with chipsim/SimX/containers up and running
+
+
+
+<Shutdown L1 VM and try to restore it back>
+
+root@l1-ubuntu:~/weaver# poweroff
+Connection to 192.168.122.121 closed by remote host.
+Connection to 192.168.122.121 closed.
+
+
+root@dl325g11-2067:~/nested_qemu# virsh list --all | grep l1-ubuntu
+ -    l1-ubuntu   shut off
+
+
+qemu-img create -f qcow2 -b /root/nested_qemu/L1_system.snap1.qcow2 -F qcow2 /root/nested_qemu/L1_system.snap2.qcow2
+
+root@dl325g11-2067:~/nested_qemu# ls -alh
+total 487G
+drwxr-xr-x  4 root root 4.0K Apr 28 05:12 .
+drwx------ 26 root root 4.0K Apr 28 03:55 ..
+drwxr-xr-x  2 root root 4.0K Apr 28 03:00 .claude
+-r--r--r--  1 root root 108M Apr 27 03:18 .initrd
+-rw-r--r--  1 root root    0 Apr 27 03:23 .install_done
+-r--r--r--  1 root root  12M Apr 27 03:18 .kernel
+-rw-r--r--  1 root root 1.4K Apr 27 03:50 l1-guest.xml
+-rw-r--r--  1 root root 193G Apr 28 03:54 L1_system.qcow2
+-rw-r--r--  1 root root 112G Apr 28 05:08 L1_system.snap1.qcow2
+-rw-------  1 root root 177M Apr 28 05:22 L1_system.snap2.qcow2
+-rw-r--r--  1 root root 364K Apr 27 03:18 .seed.iso
+drwxr-xr-x  2 root root 4.0K Apr 27 03:18 .seed-src
+-rwxr-xr-x  1 root root 7.5K Apr 27 03:17 setup-host.sh
+-rw-------  1 root root 5.9G Apr 27 09:23 snap1.mem
+-rw-------  1 root root 169G Apr 28 05:12 snap2.mem
+-rw-------  1 root root 5.7G Apr 27 03:54 test.save
+-rw-r--r--  1 root root 2.0G Sep 11  2024 ubuntu-22.04.5-live-server-amd64.iso
+root@dl325g11-2067:~/nested_qemu# rm /root/nested_qemu/L1_system.snap2.qcow2
+root@dl325g11-2067:~/nested_qemu# ls -alh
+total 487G
+drwxr-xr-x  4 root root 4.0K Apr 28 05:24 .
+drwx------ 26 root root 4.0K Apr 28 03:55 ..
+drwxr-xr-x  2 root root 4.0K Apr 28 03:00 .claude
+-r--r--r--  1 root root 108M Apr 27 03:18 .initrd
+-rw-r--r--  1 root root    0 Apr 27 03:23 .install_done
+-r--r--r--  1 root root  12M Apr 27 03:18 .kernel
+-rw-r--r--  1 root root 1.4K Apr 27 03:50 l1-guest.xml
+-rw-r--r--  1 root root 193G Apr 28 03:54 L1_system.qcow2
+-rw-r--r--  1 root root 112G Apr 28 05:08 L1_system.snap1.qcow2
+-rw-r--r--  1 root root 364K Apr 27 03:18 .seed.iso
+drwxr-xr-x  2 root root 4.0K Apr 27 03:18 .seed-src
+-rwxr-xr-x  1 root root 7.5K Apr 27 03:17 setup-host.sh
+-rw-------  1 root root 5.9G Apr 27 09:23 snap1.mem
+-rw-------  1 root root 169G Apr 28 05:12 snap2.mem
+-rw-------  1 root root 5.7G Apr 27 03:54 test.save
+-rw-r--r--  1 root root 2.0G Sep 11  2024 ubuntu-22.04.5-live-server-amd64.iso
+root@dl325g11-2067:~/nested_qemu# qemu-img create -f qcow2 -b /root/nested_qemu/L1_system.snap1.qcow2 -F qcow2 /root/nested_qemu/L1_system.snap2.qcow2
+Formatting '/root/nested_qemu/L1_system.snap2.qcow2', fmt=qcow2 cluster_size=65536 extended_l2=off compression_type=zlib size=274877906944 backing_file=/root/nested_qemu/L1_system.snap1.qcow2 backing_fmt=qcow2 lazy_refcounts=off refcount_bits=16
+root@dl325g11-2067:~/nested_qemu# ls -lah
+total 487G
+drwxr-xr-x  4 root root 4.0K Apr 28 05:25 .
+drwx------ 26 root root 4.0K Apr 28 03:55 ..
+drwxr-xr-x  2 root root 4.0K Apr 28 03:00 .claude
+-r--r--r--  1 root root 108M Apr 27 03:18 .initrd
+-rw-r--r--  1 root root    0 Apr 27 03:23 .install_done
+-r--r--r--  1 root root  12M Apr 27 03:18 .kernel
+-rw-r--r--  1 root root 1.4K Apr 27 03:50 l1-guest.xml
+-rw-r--r--  1 root root 193G Apr 28 03:54 L1_system.qcow2
+-rw-r--r--  1 root root 112G Apr 28 05:08 L1_system.snap1.qcow2
+-rw-r--r--  1 root root 196K Apr 28 05:25 L1_system.snap2.qcow2
+-rw-r--r--  1 root root 364K Apr 27 03:18 .seed.iso
+drwxr-xr-x  2 root root 4.0K Apr 27 03:18 .seed-src
+-rwxr-xr-x  1 root root 7.5K Apr 27 03:17 setup-host.sh
+-rw-------  1 root root 5.9G Apr 27 09:23 snap1.mem
+-rw-------  1 root root 169G Apr 28 05:12 snap2.mem
+-rw-------  1 root root 5.7G Apr 27 03:54 test.save
+-rw-r--r--  1 root root 2.0G Sep 11  2024 ubuntu-22.04.5-live-server-amd64.iso
+
+root@dl325g11-2067:~/nested_qemu# qemu-img info --backing-chain /root/nested_qemu/L1_system.snap2.qcow2
+image: /root/nested_qemu/L1_system.snap2.qcow2
+file format: qcow2
+virtual size: 256 GiB (274877906944 bytes)
+disk size: 196 KiB
+cluster_size: 65536
+backing file: /root/nested_qemu/L1_system.snap1.qcow2
+backing file format: qcow2
+Format specific information:
+    compat: 1.1
+    compression type: zlib
+    lazy refcounts: false
+    refcount bits: 16
+    corrupt: false
+    extended l2: false
+
+image: /root/nested_qemu/L1_system.snap1.qcow2
+file format: qcow2
+virtual size: 256 GiB (274877906944 bytes)
+disk size: 112 GiB
+cluster_size: 65536
+backing file: /root/nested_qemu/L1_system.qcow2
+backing file format: qcow2
+Format specific information:
+    compat: 1.1
+    compression type: zlib
+    lazy refcounts: false
+    refcount bits: 16
+    corrupt: false
+    extended l2: false
+
+image: /root/nested_qemu/L1_system.qcow2
+file format: qcow2
+virtual size: 256 GiB (274877906944 bytes)
+disk size: 193 GiB
+cluster_size: 65536
+Format specific information:
+    compat: 1.1
+    compression type: zlib
+    lazy refcounts: false
+    refcount bits: 16
+    corrupt: false
+    extended l2: false
+
+root@dl325g11-2067:~/nested_qemu# time sudo virsh restore /root/nested_qemu/snap2.mem
+Domain restored from /root/nested_qemu/snap2.mem
+
+
+real	1m53.444s
+user	0m0.006s
+sys	0m0.001s
+root@dl325g11-2067:~/nested_qemu# virsh list --all | grep l1-ubuntu
+ 11   l1-ubuntu   running
+
+
+<ssh into L1 QEMU VM>
+
+root@dl325g11-2067:~/nested_qemu# ssh nvidia@192.168.122.121
+nvidia@192.168.122.121's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-176-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Tue Apr 28 05:08:43 AM UTC 2026
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+66 updates can be applied immediately.
+6 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+7 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+New release '24.04.4 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+Last login: Tue Apr 28 03:57:00 2026 from 192.168.122.1
+nvidia@l1-ubuntu:~$ sudo -s
+[sudo] password for nvidia: 
+root@l1-ubuntu:/home/nvidia# docker ps -a
+CONTAINER ID   IMAGE                                                                           COMMAND                  CREATED          STATUS          PORTS     NAMES
+6e420c565cb6   artifactory.nvidia.com/sw-systemsim-docker-local/gpu_docker_img:vru_mgx_5p0     "/usr/local/bin/tini…"   57 minutes ago   Up 57 minutes             CT_0_gpu_1
+9841dc386ad1   artifactory.nvidia.com/sw-systemsim-docker-local/gpu_docker_img:vru_mgx_5p0     "/usr/local/bin/tini…"   57 minutes ago   Up 57 minutes             CT_0_gpu_0
+d9c06215d5d7   artifactory.nvidia.com/sw-systemsim-docker-local/scsim_docker_img:vru_mgx_5p0   "/usr/local/bin/tini…"   58 minutes ago   Up 58 minutes             CT_0_vera
+de07d13682fb   harbor.mellanox.com/chipsim/master/ib:master-1.3.211                            "/spawn.sh"              59 minutes ago   Up 59 minutes             CS_QM5
+
+root@l1-ubuntu:~/weaver# df -h
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs            26G  1.6M   26G   1% /run
+/dev/vda2       251G  213G   26G  90% /
+tmpfs           126G     0  126G   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+tmpfs           126G     0  126G   0% /run/qemu
+tmpfs            26G  4.0K   26G   1% /run/user/1000
+overlay         251G  213G   26G  90% /var/lib/docker/rootfs/overlayfs/de07d13682fbfb31122b63ca13329d97bd1e7854658c43e865812a8f1b17cced
+overlay         251G  213G   26G  90% /var/lib/docker/rootfs/overlayfs/d9c06215d5d7e8fbb3c77e13081ad3d59c3f9a953baa45e51609a59877568001
+shm             3.0G     0  3.0G   0% /var/lib/docker/containers/d9c06215d5d7e8fbb3c77e13081ad3d59c3f9a953baa45e51609a59877568001/mounts/shm
+overlay         251G  213G   26G  90% /var/lib/docker/rootfs/overlayfs/9841dc386ad156e2c0c898f4a3828355ea2d57474ec720d90a7a661893030509
+overlay         251G  213G   26G  90% /var/lib/docker/rootfs/overlayfs/6e420c565cb65afe2b87aecbed6dcfb55b1f985d73aa7af5d732b27ed0a8e11a
+root@l1-ubuntu:~/weaver# free -h
+               total        used        free      shared  buff/cache   available
+Mem:           251Gi        51Gi        65Gi       6.8Gi       134Gi       191Gi
+Swap:          4.0Gi          0B       4.0Gi
+root@l1-ubuntu:~/weaver# docker ps -a
+CONTAINER ID   IMAGE                                                                           COMMAND                  CREATED             STATUS             PORTS     NAMES
+6e420c565cb6   artifactory.nvidia.com/sw-systemsim-docker-local/gpu_docker_img:vru_mgx_5p0     "/usr/local/bin/tini…"   58 minutes ago      Up 58 minutes                CT_0_gpu_1
+9841dc386ad1   artifactory.nvidia.com/sw-systemsim-docker-local/gpu_docker_img:vru_mgx_5p0     "/usr/local/bin/tini…"   58 minutes ago      Up 58 minutes                CT_0_gpu_0
+d9c06215d5d7   artifactory.nvidia.com/sw-systemsim-docker-local/scsim_docker_img:vru_mgx_5p0   "/usr/local/bin/tini…"   59 minutes ago      Up 59 minutes                CT_0_vera
+de07d13682fb   harbor.mellanox.com/chipsim/master/ib:master-1.3.211                            "/spawn.sh"              About an hour ago   Up About an hour             CS_QM5
+
+
+<ssh into L2 Vera VM>
+
+root@l1-ubuntu:~/weaver# ssh nvidia@172.17.0.100
+nvidia@172.17.0.100's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-163-generic aarch64)
+
+ ... <SNIP> ...
+
+
+Last login: Tue Apr 28 04:52:32 2026 from 172.17.0.1
+nvidia@ubuntu-L1:~$ sudo -s
+root@ubuntu-L1:/home/nvidia# lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0003:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0003:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:353f] (rev a1)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 CXL [0502]: NVIDIA Corporation Device [10de:bee0] (rev 01)
+0006:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0006:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:353f] (rev a1)
+
+
+<ssh into QM5 VM>
+root@l1-ubuntu:/home/nvidia# docker exec -it CS_QM5 bash
+
+[root@CS_QM5 chipsim]# ssh admin@172.17.0.103
+NVOS switch
+admin@172.17.0.103's password:
+
+ ███╗   ██╗██╗   ██╗ ██████╗ ███████╗
+ ████╗  ██║██║   ██║██╔═══██╗██╔════╝
+ ██╔██╗ ██║██║   ██║██║   ██║███████╗
+ ██║╚██╗██║╚██╗ ██╔╝██║   ██║╚════██║
+ ██║ ╚████║ ╚████╔╝ ╚██████╔╝███████║
+ ╚═╝  ╚═══╝  ╚═══╝   ╚═════╝ ╚══════╝
+
+Last login: Tue Apr 28 04:49:27 UTC 2026 from 172.17.0.1 on ssh
+Last failed login: Tue Apr 28 05:42:55 UTC 2026 from 172.17.0.3 on ssh:notty
+There were 12 failed login attempts since the last successful login.
+Number of total successful connections since last 1 days: 1
+
+
+
+[Trouble shooting for loading QM5 VM on L1 QEMU VM]
+
+the QM5/chipsim VM was failing inside the L1 nested VM with cannot execute binary /usr/bin/qemu-system-x86_64: Permission denied, even with --privileged --security-opt apparmor=unconfined.                                        
+                                                                                                                                                                                                                                            
+  Root cause: AppArmor on the outer host (where libvirt runs your L1 VM, not L1 itself) matches profiles by binary path. The chipsim container's libvirtd binary lives at /usr/sbin/libvirtd — same path as the outer host's libvirtd binary
+   — so the kernel auto-applied the host's libvirtd AppArmor profile to it across the container boundary, regardless of the apparmor=unconfined flag. That profile didn't whitelist Rocky's /usr/bin/qemu-system-x86_64, so every libvirt
+  exec of QEMU got EACCES.                                                                                                                                                                                                                  
+                  
+  Fix (on the outer host — where you run virsh):                                                                                                                                                                                            
+  
+  sudo mkdir -p /etc/apparmor.d/disable                                                                                                                                                                                                     
+  sudo ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/usr.sbin.libvirtd
+  sudo ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/usr.lib.libvirt.virt-aa-helper                                                                                                                         
+  sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd                                                                                                                                                                                 
+  sudo apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper                                                                                                                                                                    
+                                                                                                                                                                                                                                            
+  This persists across reboots (the symlinks in /etc/apparmor.d/disable/ tell AppArmor not to reload them). After this, the chipsim launcher progressed end-to-end
