@@ -494,3 +494,25 @@ the QM5/chipsim VM was failing inside the L1 nested VM with cannot execute binar
   sudo apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper                                                                                                                                                                    
                                                                                                                                                                                                                                             
   This persists across reboots (the symlinks in /etc/apparmor.d/disable/ tell AppArmor not to reload them). After this, the chipsim launcher progressed end-to-end
+
+
+
+● For the specific "can't load QM5 VM" failure (cannot execute binary qemu-system-x86_64: Permission denied), yes — disabling the host's libvirtd AppArmor profile was the only fix.                                                        
+                                                                                                                                                                                                                                            
+  But getting from a fresh L1 VM all the way to a running QM5 took several other steps too. Quick recap of everything we did along the way:                                                                                                 
+   
+  ┌─────┬────────────┬────────────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────┐                                                     
+  │  #  │   Where    │                                 Change                                 │                                          Why                                          │
+  ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
+  │ 1   │ inside L1  │ apt purge ansible-core (left only pip's ansible-core 2.17.14)          │ Two ansible installs were colliding; apt's 2.12 launcher imported from pip's 2.17 lib │
+  ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
+  │ 2   │ inside L1  │ apt install docker.io, add user to docker group                        │ Weaver requires Docker; docker group must exist for the role                          │                                                     
+  ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
+  │ 3   │ inside L1  │ re-login to refresh group membership                                   │ Bash needs a fresh login to see the new docker group                                  │                                                     
+  ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
+  │ 4   │ inside L1  │ docker login artifactory.nvidia.com (jjang token from .netrc)          │ Pull the scsim / gpu / chipsim images from internal Artifactory                       │
+  ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
+  │ 5   │ outer host │ disable libvirtd + virt-aa-helper AppArmor profiles                    │ The QM5 VM exec fix — the one you're asking about                                     │
+  ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
+  │ 6   │ outer host │ qemu-img resize + live virsh blockresize + growpart/resize2fs to 256 G │ Simulation artifacts filled the 200 G L1 disk                                         │
+  └─────┴────────────┴────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────┘      
