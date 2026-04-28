@@ -60,7 +60,7 @@
   Step 6 — Smoke-test save/restore (do this before trusting it)                                                                      
                                                                                                                                      
   Back on L0 (after exiting virsh console):                                                                                          
-  sudo virsh save l1-ubuntu /root/nested_qemu/test.save --bypass-cache                                                               
+  sudo virsh save l1-ubuntu /root/nested_qemu/test.save --bypass-cache                                                             
   ls -lh /root/nested_qemu/test.save     # check file size                                                                           
   sudo virsh restore /root/nested_qemu/test.save --bypass-cache                                                                      
   sudo virsh console l1-ubuntu           # reconnect, run `uptime` — should not have rebooted                                        
@@ -72,6 +72,11 @@
   Go ahead and run the script. Tell me when you hit a prompt, when phase 5 starts, when it finishes, or if anything looks wrong —
   I'll help interpret the output.    
 
+  <How to scan L1 guest OS IP address>
+  sudo virsh domifaddr l1-ubuntu --source arp
+  Name       MAC address          Protocol     Address
+  -------------------------------------------------------------------------------
+  vnet6      52:54:00:9d:fd:af    ipv4         192.168.122.121/0
 
 
 ● Bash(virsh list --all)                                                                                                                                                                                                                                    
@@ -109,3 +114,42 @@ nvidia@192.168.122.121's password:
 Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-176-generic x86_64)
 
 
+
+
+
+
+● Here are the two restore workflows we used:                                                                                         
+                                                                                                                                      
+  1. virsh save / virsh restore (managed save)                                                                                        
+                                                                                                                                      
+  Save (stops the VM, writes memory to file):                                                                                         
+  sudo virsh save l1-ubuntu /root/nested_qemu/test.save --bypass-cache
+                                                                                                                                      
+  Restore (resumes from saved memory; disk is whatever it is now):                                                                    
+  sudo virsh restore /root/nested_qemu/test.save --bypass-cache                                                                       
+                                                                                                                                      
+  2. External snapshot revert (manual — libvirt doesn't auto-revert externals)                                                        
+                                                                                                                                      
+  Create snapshot (live, disk + memory):                                                                                              
+  sudo virsh snapshot-create-as l1-ubuntu \                                                                                           
+    --name snap1 \                         
+    --memspec file=/root/nested_qemu/snap1.mem,snapshot=external \                                                                    
+    --diskspec vda,file=/root/nested_qemu/L1_system.snap1.qcow2,snapshot=external \                                                   
+    --atomic                                                                                                                          
+                                                                                                                                      
+  Revert (3 steps — VM must be shut off first):                                                                                       
+  # a. stop VM if running                                                                                                             
+  sudo virsh destroy l1-ubuntu
+                                                                                                                                      
+  # b. reset overlay to empty (discards all writes since snapshot)                                                                    
+  sudo rm /root/nested_qemu/L1_system.snap1.qcow2                                                                                     
+  sudo qemu-img create -f qcow2 \                                                                                                     
+    -b /root/nested_qemu/L1_system.qcow2 -F qcow2 \                                                                                   
+    /root/nested_qemu/L1_system.snap1.qcow2                                                                                           
+                                           
+  # c. restore memory state                                                                                                           
+  sudo virsh restore /root/nested_qemu/snap1.mem
+                                                                                                                                      
+  Key difference: virsh save/restore is a single round-trip (save stops the VM). External snapshots stay live — the VM keeps running
+  after the snapshot — but reverting is manual.                                                                                       
+   
