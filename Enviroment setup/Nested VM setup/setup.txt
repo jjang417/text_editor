@@ -72,3 +72,40 @@
   Go ahead and run the script. Tell me when you hit a prompt, when phase 5 starts, when it finishes, or if anything looks wrong —
   I'll help interpret the output.    
 
+
+
+● Bash(virsh list --all)                                                                                                                                                                                                                                    
+  ⎿   Id   Name        State                                                                                                                                                                                                                                
+     ---------------------------                                                                                                                                                                                                                            
+      8    l1-ubuntu   running 
+
+root@dl325g11-2067:~/nested_qemu# virsh dominfo l1-ubuntu
+Id:             8
+Name:           l1-ubuntu
+UUID:           66c4dd0f-0930-4deb-8a46-3aba7e6c5e50
+OS Type:        hvm
+State:          running
+CPU(s):         16
+CPU time:       261.4s
+Max memory:     268435456 KiB
+Used memory:    268435456 KiB
+Persistent:     yes
+Autostart:      disable
+Managed save:   no
+Security model: none
+Security DOI:   0
+Messages:       tainted: running with undesirable elevated privileges
+                tainted: potentially unsafe use of host CPU passthrough
+
+
+
+root@dl325g11-2067:~/nested_qemu# virsh domifaddr l1-ubuntu 
+ Name       MAC address          Protocol     Address
+-------------------------------------------------------------------------------
+ vnet7      52:54:00:9d:fd:af    ipv4         192.168.122.121/24
+
+root@dl325g11-2067:~/nested_qemu# ssh nvidia@192.168.122.121
+nvidia@192.168.122.121's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-176-generic x86_64)
+
+

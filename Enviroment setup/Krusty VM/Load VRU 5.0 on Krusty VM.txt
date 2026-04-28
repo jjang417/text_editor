@@ -47,9 +47,7 @@ git checkout rel/vru/5p0
 
 
 # Run simulation until physical link-up for CG2Q (inband-only)
-ansible-playbook -i inventories/vru.yml weaver.yml \
-    -e config=vru_cg2q -e platform=vru \
-    --tags prepare,start_containers,link_physically
+ansible-playbook -i inventories/vru.yml weaver.yml -e config=vru_cg2q -e platform=vru --tags prepare,start_containers,link_physically
 
 
 # Run simulation until physical link-up for CG2Q (inband-only) on Krusty VM
