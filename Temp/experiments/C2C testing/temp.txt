@@ -1,0 +1,104 @@
+
+
+ 
+
+$ sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo sh nvload_rm.sh -v -d -b gr102_sim_hbm4.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1'" 
+
+$ sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo nvidia-persistenced -V" 
+
+
+[GPU fmod chiparg] 
+{
+    "fmodel": "gr102", 
+    "fmodel_root_dir": "/home/jjang/dc_sim_git/commslib_adpater/sim/devproc/build", 
+    "fmodel_so": "clib/Linux_x86_64/grlit1_smbase_fmodel_64.so", 
+    "chipargs": "-sriov_BDFShiftSizeInSysmemAddr=56 -opt_hshub7_disable -opt_hshub6_disable -disable_ats_backdoor -fsf_mode -fslib_mode_disable -mmu_frontdoor_iodie -fc_ltc_slice_run_loop -mux_sel_from_sys_ctrl -drop_pmgr_pri_accesses -pce_connected_to_cehub -simtxt max_nvclk=0 -nvlink_datapath_to_nvlc -floorsweep=nvlc_perlink_enable:0:0x5:c2c_disable:0x3:syspipe_enable:0x01:display_disable:1:pmu_enable:0x1:oobhub_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1:gpc_enable:0x1:gpc_tpc_enable:0:0x1:gpc_cpc_enable:0:0x1:fbp_enable:0x1:fbio_enable:0xf -noinstance_nvenc -noinstance_nvdec -smAllowUninitializedRegister sim-terminate-timeout=0 -use_gen6 -fmod_hiearchy_provides_die_id -gpu_instance=0 -xalep2fb_en -temp_enable_fbhub_node_ids -upstream_path_gen6 -c2c_disable -nvlpw_rlw_csl_assertions_instead_of_errors -chipPOR=gr102 -frontdoor_soc_path=1 -smTrapStateChangeCheckInterval=10000 -event_cover=1 -c2c0=CPU -c2c1=CPU -c2c2=CPU -c2c3=CPU -c2c4=CPU -c2c5=CPU -c2c6=CPU -c2c7=CPU -c2c8=CPU -c2c9=CPU -c2c10=CPU -c2c11=CPU -c2c12=CPU -c2c13=CPU -send_atr_over_xbar" 
+} 
+
+ 
+
+ 
+
+[SCSIM GPVAR] 
+        # To disable SCSIM GPU and use external commlib GPU on PCIe C2 and C5 
+        self.common += " disable_gpu_sim=1 use_commlib_gpu_on_pcie_c2=1 use_commlib_gpu_on_pcie_c5=1 gpu_pcie_controller=0x25 commlib_adapter_lib=libcommslib_adapter.so commlib_client_name=SCSIM_TB500_0 commlib_comp_name=GPU_0 " 
+        # To disable the Non-secure PAS checking for commlib C2C testing 
+        self.common += "ccplex_slc_security_chk=0 " 
+
+        # GPU related args 
+        # Please set gpvars disable_gpu_sim=0, idle_timeout=0 to run gpu. 
+        # By default gpu will run in backdoor mode, to enable frontdoor path please set gpvar 
+        # enable_gpu_frontdoor_path=1. SMMU should also be enabled when running on frontdoor path. 
+        # Since gr100 is a dGPU and have much bigger config compare to gb10b, it is advised to 
+        # run in 111 config to get best runtime performance. 
+
+        self.gpu += " idle_timeout=0 enable_gpu_c2c_grs=1 accelerate_bkdr_gpu_hbm=0 enable_gpu_frontdoor_path=1 " 
+
+ 
+
+ 
+
+ 
+
+ 
+
+So, we could use the following busybox commands to trigger CPU-GPU C2C transaction to read GPU memory data. 
+
+sudo busybox devmem 0x200000000000 32 => to read GPU#0 memory data 
+
+sudo busybox devmem 0x220000000000 32 => to read GPU#1 memory data 
+
+sudo busybox devmem 0x280000000000 32 => to read GPU#2 memory data 
+
+sudo busybox devmem 0x2a0000000000 32 => to read GPU#3 memory data 
+
+
+nvidia@pset$ sudo -s
+root@pset$ sudo sh nvload_rm.sh -v -d -b gr102_sim_hbm4.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1
+;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1'
+Processing GPU: 0003:01:00.0
+Wrote external GPU0 registry path
+Processing GPU: 0006:01:00.0
+Wrote external GPU1 registry path
+Processing GPU: 000b:01:00.0
+Wrote external GPU2 registry path
+Processing GPU: 000e:01:00.0
+Wrote external GPU3 registry path
+RM loaded.
+root@pset$ sudo nvidia-persistenced -V
+root@pset$ sudo busybox devmem 0x200000000000 32
+0x00000000
+root@pset$ sudo busybox devmem 0x200000000000 32 1
+root@pset$ sudo busybox devmem 0x200000000000 32
+0x00000001
+root@pset$ sudo busybox devmem 0x200000000000 32 0x5a
+root@pset$ sudo busybox devmem 0x200000000000 32
+0x0000005A
+root@pset$ sudo busybox devmem 0x200000000000 64 0x5a
+root@pset$ sudo busybox devmem 0x200000000000 64
+0x000000000000005A
+
+
+
+
+[To pass nvidia-persistenced and nvidia-smi]
+
+$ sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo sysctl -w kernel.watchdog_thresh=0"
+
+$ sshpass -p "nvidia" ssh -o StrictHostKeyChecking=no -p "10022" "nvidia@127.0.0.1" "sudo sh nvload_rm.sh -v -d -b gr102_sim_hbm4.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'"
+
+
+root@pset$ sudo sysctl -w kernel.watchdog_thresh=0
+kernel.watchdog_thresh = 0
+root@pset$ sudo sh nvload_rm.sh -v -d -b gr102_sim_hbm4.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1
+;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+Processing GPU: 0003:01:00.0
+Wrote external GPU0 registry path
+Processing GPU: 0006:01:00.0
+Wrote external GPU1 registry path
+Processing GPU: 000b:01:00.0
+Wrote external GPU2 registry path
+Processing GPU: 000e:01:00.0
+Wrote external GPU3 registry path
+RM loaded.
+root@pset$ nvidia-persistenced -V

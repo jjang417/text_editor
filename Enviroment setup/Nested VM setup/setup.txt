@@ -516,3 +516,31 @@ the QM5/chipsim VM was failing inside the L1 nested VM with cannot execute binar
   ├─────┼────────────┼────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤                                                     
   │ 6   │ outer host │ qemu-img resize + live virsh blockresize + growpart/resize2fs to 256 G │ Simulation artifacts filled the 200 G L1 disk                                         │
   └─────┴────────────┴────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────┘      
+
+
+
+<After merging snap1.qcow2 and snap2.qcow2, how to restore L1 QEMU VM back>
+
+root@dl325g11-2067:~/nested_qemu# time virsh restore /root/nested_qemu/snap2.mem --xml /root/nested_qemu/l1-ubuntu-current.xml
+Domain restored from /root/nested_qemu/snap2.mem
+
+
+real	0m46.622s
+user	0m0.003s
+sys	0m0.017s
+root@dl325g11-2067:~/nested_qemu# virsh list --all
+ Id   Name        State
+---------------------------
+ 18   l1-ubuntu   running
+
+root@dl325g11-2067:~/nested_qemu# virsh domifaddr l1-ubuntu --source arp
+ Name       MAC address          Protocol     Address
+-------------------------------------------------------------------------------
+ vnet17     52:54:00:9d:fd:af    ipv4         192.168.122.121/0
+
+Then you could use "ssh nvidia@192.168.122.121" with password nvida to ssh into l1-ubuntu QEMU VM.
+
+
+
+
+
