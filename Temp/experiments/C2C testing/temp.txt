@@ -102,3 +102,121 @@ Processing GPU: 000e:01:00.0
 Wrote external GPU3 registry path
 RM loaded.
 root@pset$ nvidia-persistenced -V
+
+
+[SCSIM NET#15]
+
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1'
+
+sudo sysctl -w kernel.watchdog_thresh=0
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+
+
+[SCSIM NET#15 C1G1 with commlib GPU (fmod 89068823) support]
+
+nvidia@pset$ sudo sysctl -w kernel.watchdog_thresh=0
+kernel.watchdog_thresh = 0
+nvidia@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBoots
+trapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+
+Thu Jan  1 00:08:00 1970       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 615.03                 KMD Version: 615.03        CUDA UMD Version: 13.4     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Graphics Device                On  |   00000003:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+RM loaded.
+
+nvidia@pset$ sudo -s
+root@pset$ busybox devmem 0x200000000000 32
+0x00000000
+root@pset$ busybox devmem 0x200000000000 32 0x5a
+root@pset$ busybox devmem 0x200000000000 32
+0x0000005A
+
+
+
+[Program GPU HSHUB register before devmem read/write]
+
+0x00878e58   -> 0x1   // HSHUB8_CHI2HSH_CXL_CFG_MEM_ENABLE
+0x00879e58   -> 0x1   // HSHUB9_CHI2HSH_CXL_CFG_MEM_ENABLE
+
+0x00878e48   -> 0x2   // HSHUB8_CHILINK_IO_MAP_MODE_C2C_CHI
+0x00879e48   -> 0x2   // HSHUB9_CHILINK_IO_MAP_MODE_C2C_CHI
+
+root@pset$ lspci -v -d 10de:30bf
+0003:01:00.0 3D controller: NVIDIA Corporation Device 30bf (rev a1)
+	Flags: fast devsel, IRQ 255, NUMA node 0, IOMMU group 3
+	Memory at 802100000000 (64-bit, prefetchable) [disabled] [size=256M]
+	Memory at 802110000000 (64-bit, prefetchable) [disabled] [size=256M]
+	Memory at 802510000000 (64-bit, prefetchable) [disabled] [size=32M]
+
+root@pset$ sudo -s
+root@pset$ busybox devmem 0x802100878e58 32 0x1
+root@pset$ busybox devmem 0x802100878e58 32
+0x00000001
+root@pset$ busybox devmem 0x802100879e58 32 0x1
+root@pset$ busybox devmem 0x802100879e58 32
+0x00000001
+root@pset$ busybox devmem 0x802100878e48 32 0x2
+root@pset$ busybox devmem 0x802100878e48 32
+0x00000002
+root@pset$ busybox devmem 0x802100879e48 32 0x2
+root@pset$ busybox devmem 0x802100879e48 32
+0x00000002
+root@pset$ 
+root@pset$ 
+root@pset$ 
+root@pset$ busybox devmem 0x802100878e58 32
+0x00000001
+root@pset$ busybox devmem 0x802100879e58 32
+0x00000001
+root@pset$ busybox devmem 0x802100878e48 32
+0x00000002
+root@pset$ busybox devmem 0x802100879e48 32
+0x00000002
+root@pset$ busybox devmem 0x200000000000 32
+0x00000000
+root@pset$ busybox devmem 0x200000000000 32 0x5a
+root@pset$ busybox devmem 0x200000000000 32
+0x0000005A
+
+
+
+[Failure test case]
+root@pset$ busybox devmem 0x802100878e58 32 0x1
+root@pset$ busybox devmem 0x802100878e58 32
+0x00000001
+root@pset$ busybox devmem 0x802100879e58 32
+0x00000000
+root@pset$ busybox devmem 0x802100879e58 32 0x1
+root@pset$ busybox devmem 0x802100879e58 32
+0x00000001
+root@pset$ busybox devmem 0x802100878e48 32
+0x00000001
+root@pset$ busybox devmem 0x802100878e48 32 0x1
+root@pset$ busybox devmem 0x802100878e48 32
+0x00000002
+root@pset$ busybox devmem 0x802100879e48 32 0x1
+root@pset$ busybox devmem 0x802100879e48 32
+root@pset$ busybox devmem 0x200000000000 32
+
+GPU fmod log:
+AssertMsg: [ nvclk=674331 . . hshub_gchi.cpp 7287 ]  < failed assert is '(vc == expected_vc)' > Got GCHI request on unsupported VC = 0. Expected VC = 6
+AssertMsg: [ nvclk=674331 . . hshub_gchi.cpp 7287 ]  # < Stack trace - [stack:1:32:1] (trim_end:show_max:trim_top) - 11 frames pre-trimmed > :
