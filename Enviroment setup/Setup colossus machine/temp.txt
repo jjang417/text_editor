@@ -1,6 +1,6 @@
 <ARM Grace platform> 
   ssh root@10.96.83.16 
-  Password: jjanghr650n-0006 
+  Password: jjanghr650n-0006
 
  
 
