@@ -460,6 +460,7 @@ root@ubuntu-L1:/home/nvidia# lspci -nn
 root@l1-ubuntu:/home/nvidia# docker exec -it CS_QM5 bash
 
 [root@CS_QM5 chipsim]# ssh admin@172.17.0.103
+(password: nvidia123)
 NVOS switch
 admin@172.17.0.103's password:
 
@@ -543,4 +544,251 @@ Then you could use "ssh nvidia@192.168.122.121" with password nvida to ssh into 
 
 
 
+
+[Restore L1 QEMU VM on another colossus machine "dl345g11-0305"]
+
+<Download L1 QEMU VM dump (disk + memory) from jjang scratch space>
+scp jjang@dc2-sim-e10-037:/home/scratch.jjang_sw_1/nested_vm/nested_qemu.tar.gz .
+
+<Extract tarball file to '/root'>
+root@dl345g11-0305:~/nested_qemu# pwd
+/root/nested_qemu
+root@dl345g11-0305:~/nested_qemu# ls -lah
+total 596G
+drwxr-xr-x  4 root root 4.0K May  5 04:35 .
+drwxr-xr-x 41 root root 4.0K May  5 05:00 ..
+drwxr-xr-x  2 root root 4.0K Apr 28 03:00 .claude
+-r--r--r--  1 root root 108M Apr 27 03:18 .initrd
+-rw-r--r--  1 root root    0 Apr 27 03:23 .install_done
+-r--r--r--  1 root root  12M Apr 27 03:18 .kernel
+-rw-r--r--  1 root root 1.4K Apr 27 03:50 l1-guest.xml
+-rw-r--r--  1 root root 247G May  5 05:12 L1_system.qcow2
+-rw-r--r--  1 root root 3.7K Apr 28 09:05 l1-ubuntu-current.xml
+-rw-r--r--  1 root root 179G May  5 04:04 nested_qemu.tar.gz
+-rw-r--r--  1 root root 364K Apr 27 03:18 .seed.iso
+drwxr-xr-x  2 root root 4.0K Apr 27 03:18 .seed-src
+-rwxr-xr-x  1 root root 7.5K Apr 27 03:17 setup-host.sh
+-rw-------  1 root root 169G Apr 28 05:12 snap2.mem
+-rw-r--r--  1 root root 2.0G Sep 11  2024 ubuntu-22.04.5-live-server-amd64.iso
+root@dl345g11-0305:~/nested_qemu# 
+
+
+<Restore L1 QEMU VM through virsh>
+root@dl345g11-0305:~/nested_qemu# time virsh restore /root/nested_qemu/snap2.mem --xml /root/nested_qemu/l1-ubuntu-current.xml --bypass-cache --running
+Domain restored from /root/nested_qemu/snap2.mem
+
+
+real	1m35.928s
+user	0m0.018s
+sys	0m0.007s
+
+root@dl345g11-0305:~/nested_qemu# virsh list --all
+ Id   Name        State
+---------------------------
+ 2    l1-ubuntu   running
+
+root@dl325g11-2067:~/nested_qemu# virsh domifaddr l1-ubuntu --source arp
+ Name       MAC address          Protocol     Address
+-------------------------------------------------------------------------------
+ vnet17     52:54:00:9d:fd:af    ipv4         192.168.122.121/0
+
+<SSH into L1 QEMU VM>
+
+root@dl345g11-0305:~/nested_qemu# ssh nvidia@192.168.122.121
+nvidia@192.168.122.121's password: nvidia
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-176-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Tue Apr 28 05:08:49 AM UTC 2026
+
+ * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
+   just raised the bar for easy, resilient and secure K8s cluster deployment.
+
+   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
+
+Expanded Security Maintenance for Applications is not enabled.
+
+66 updates can be applied immediately.
+6 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+7 additional security updates can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+New release '24.04.4 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+Last login: Tue Apr 28 03:57:00 2026 from 192.168.122.1
+nvidia@l1-ubuntu:~$ sudo docker ps -a
+[sudo] password for nvidia: 
+CONTAINER ID   IMAGE                                                                           COMMAND                  CREATED          STATUS          PORTS     NAMES
+6e420c565cb6   artifactory.nvidia.com/sw-systemsim-docker-local/gpu_docker_img:vru_mgx_5p0     "/usr/local/bin/tini…"   57 minutes ago   Up 57 minutes             CT_0_gpu_1
+9841dc386ad1   artifactory.nvidia.com/sw-systemsim-docker-local/gpu_docker_img:vru_mgx_5p0     "/usr/local/bin/tini…"   57 minutes ago   Up 57 minutes             CT_0_gpu_0
+d9c06215d5d7   artifactory.nvidia.com/sw-systemsim-docker-local/scsim_docker_img:vru_mgx_5p0   "/usr/local/bin/tini…"   59 minutes ago   Up 59 minutes             CT_0_vera
+de07d13682fb   harbor.mellanox.com/chipsim/master/ib:master-1.3.211                            "/spawn.sh"              59 minutes ago   Up 59 minutes             CS_QM5
+
+<SSH into L2 Vera VM>
+
+nvidia@l1-ubuntu:~$ ssh nvidia@172.17.0.100
+The authenticity of host '172.17.0.100 (172.17.0.100)' can't be established.
+ED25519 key fingerprint is SHA256:2CClXmthHHpyPLz8IFdTRxKD0x518HhGSl45BK6UuX8.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+nvidia@172.17.0.100's password: nvidia
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-163-generic aarch64)
+
+... <SNIP> ...
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+
+Last login: Tue Apr 28 04:52:32 2026 from 172.17.0.1
+nvidia@ubuntu-L1:~$ sudo lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0003:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0003:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:353f] (rev a1)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 CXL [0502]: NVIDIA Corporation Device [10de:bee0] (rev 01)
+0006:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0006:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:353f] (rev a1)
+nvidia@ubuntu-L1:~$ exit
+logout
+Connection to 172.17.0.100 closed.
+
+<SSH into Chipsim QM5 VM>
+
+nvidia@l1-ubuntu:~$ docker exec -it CS_QM5 bash
+permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+nvidia@l1-ubuntu:~$ sudo docker exec -it CS_QM5 bash
+╭── CHIPSIM - Quick Commands ────────────────────────────────────────────────╮
+│ Control: cs_init, cs_reinit, cs_stop, cs_clean                             │
+│ Run: cs_run , fw_run , vmon_run                                            │
+│ Logs: cs_log , fw_log , simx_log , logs                                    │
+│ Debug: fw_gdb , reg_access <path> [value]                                  │
+│ GDB: set substitute-path /fw_build/workspace/FW_BUILD/ <private_repo_path> │
+│ Info: cs_help                                                              │
+╰────────────────────────────────────────────────────────────────────────────╯
+[root@CS_QM5 chipsim]# ssh admin@172.17.0.103
+The authenticity of host '172.17.0.103 (172.17.0.103)' can't be established.
+RSA key fingerprint is SHA256:vq8DhBAyJwu1B5dE0sPlJw4s1SNGOgGHZMAZlM3tuQI.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '172.17.0.103' (RSA) to the list of known hosts.
+NVOS switch
+admin@172.17.0.103's password: nvidia123
+
+ ███╗   ██╗██╗   ██╗ ██████╗ ███████╗
+ ████╗  ██║██║   ██║██╔═══██╗██╔════╝
+ ██╔██╗ ██║██║   ██║██║   ██║███████╗
+ ██║╚██╗██║╚██╗ ██╔╝██║   ██║╚════██║
+ ██║ ╚████║ ╚████╔╝ ╚██████╔╝███████║
+ ╚═╝  ╚═══╝  ╚═══╝   ╚═════╝ ╚══════╝
+
+Last login: Tue Apr 28 04:49:27 UTC 2026 from 172.17.0.1 on ssh
+Number of total successful connections since last 1 days: 1
+admin@nvos:~$ exit
+logout
+
+
+
+
+● Full record of what I did on this host before the L1 restore worked                                                                                                                                                                       
+                                                                                                                                                                                                                                            
+  1. Verified host capability for nested KVM 
+  - AMD-V (svm) flag present in /proc/cpuinfo, /dev/kvm exists, kvm_amd nested=1
+  - CPU: AMD EPYC 9655P (192 threads), 3.0 TiB RAM, 1.6 TB free disk on NVMe
+  - Plenty of headroom for a 256 GiB / 16 vCPU L1
+
+  2. Installed libvirt
+
+  - Ran apt-get update (3 unrelated PPAs unreachable, ignored)
+  - Installed libvirt-daemon-system and libvirt-clients from jammy-updates, version 8.0.0-1ubuntu7.16 (canonical-server backports PPA was unreachable, so I pinned to the archive version that matches the existing libvirt0)
+  - libvirtd.service came up active, virsh works, default network virbr0 (192.168.122.0/24) auto-started
+
+  3. Disabled AppArmor profiles for libvirt (your known gotcha)
+
+  Created persistent disable symlinks and unloaded both profiles in-kernel:
+  mkdir -p /etc/apparmor.d/disable
+  ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/usr.sbin.libvirtd
+  ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/usr.lib.libvirt.virt-aa-helper
+  apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd
+  apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper
+  Verified: aa-status shows no libvirt/qemu profiles loaded; libvirtd's /proc/$PID/attr/current reports unconfined.
+
+  4. Patched /etc/libvirt/qemu.conf
+
+  Backed up to /etc/libvirt/qemu.conf.bak.<timestamp>, then set:
+  - user = "root"
+  - group = "root"
+  - security_driver = "none"
+
+  (Otherwise libvirt-qemu can't read the qcow2 in /root — would fail with EACCES.)
+  Restarted libvirtd to load the new config.
+
+  5. Inspected the L1 artifacts and chose the right XML
+
+  - L1_system.qcow2 — 247 GiB actual / 256 GiB virtual, standalone (no backing file in qcow2 header) — confirms your earlier qemu-img commit of snap1 into the base.
+  - snap2.mem — 169 GiB libvirt save (LibvirtQemudSave magic). Embedded XML still references the gone L1_system.snap1.qcow2 overlay → a plain virsh restore would fail.
+  - Diffed l1-ubuntu-current.xml against the save's embedded XML: only meaningful difference is the disk source path (correct post-merge target). UUID, MAC, all PCI addresses, machine type, vCPU count, memory all byte-identical → safe  
+  ● Full record of what I did on this host before the L1 restore worked                                                                                                                                                                       
+                                                                                                                                                                                                                                            
+  1. Verified host capability for nested KVM                                                                                                                                                                                                
+   
+  - AMD-V (svm) flag present in /proc/cpuinfo, /dev/kvm exists, kvm_amd nested=1                                                                                                                                                            
+  - CPU: AMD EPYC 9655P (192 threads), 3.0 TiB RAM, 1.6 TB free disk on NVMe
+  - Plenty of headroom for a 256 GiB / 16 vCPU L1                                                                                                                                                                                           
+                                                                                                                                                                                                                                            
+  2. Installed libvirt                                                                                                                                                                                                                      
+                                                                                                                                                                                                                                            
+  - Ran apt-get update (3 unrelated PPAs unreachable, ignored)                                                                                                                                                                              
+  - Installed libvirt-daemon-system and libvirt-clients from jammy-updates, version 8.0.0-1ubuntu7.16 (canonical-server backports PPA was unreachable, so I pinned to the archive version that matches the existing libvirt0)
+  - libvirtd.service came up active, virsh works, default network virbr0 (192.168.122.0/24) auto-started                                                                                                                                    
+                                                                                                                                                                                                                                            
+  3. Disabled AppArmor profiles for libvirt (your known gotcha)                                                                                                                                                                             
+                                                                                                                                                                                                                                            
+  Created persistent disable symlinks and unloaded both profiles in-kernel:                                                                                                                                                                 
+  mkdir -p /etc/apparmor.d/disable
+  ln -sf /etc/apparmor.d/usr.sbin.libvirtd /etc/apparmor.d/disable/usr.sbin.libvirtd                                                                                                                                                        
+  ln -sf /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper /etc/apparmor.d/disable/usr.lib.libvirt.virt-aa-helper
+  apparmor_parser -R /etc/apparmor.d/usr.sbin.libvirtd                                                                                                                                                                                      
+  apparmor_parser -R /etc/apparmor.d/usr.lib.libvirt.virt-aa-helper                                                                                                                                                                         
+  Verified: aa-status shows no libvirt/qemu profiles loaded; libvirtd's /proc/$PID/attr/current reports unconfined.                                                                                                                         
+                                                                                                                                                                                                                                            
+  4. Patched /etc/libvirt/qemu.conf                                                                                                                                                                                                         
+                                                                                                                                                                                                                                            
+  Backed up to /etc/libvirt/qemu.conf.bak.<timestamp>, then set:                                                                                                                                                                            
+  - user = "root"                                                                                                                                                                                                                           
+  - group = "root"                                                                                                                                                                                                                          
+  - security_driver = "none"
+                                                                                                                                                                                                                                            
+  (Otherwise libvirt-qemu can't read the qcow2 in /root — would fail with EACCES.)                                                                                                                                                          
+  Restarted libvirtd to load the new config.                                                                                                                                                                                                
+                                                                                                                                                                                                                                            
+  5. Inspected the L1 artifacts and chose the right XML                                                                                                                                                                                     
+                  
+  - L1_system.qcow2 — 247 GiB actual / 256 GiB virtual, standalone (no backing file in qcow2 header) — confirms your earlier qemu-img commit of snap1 into the base.                                                                        
+  - snap2.mem — 169 GiB libvirt save (LibvirtQemudSave magic). Embedded XML still references the gone L1_system.snap1.qcow2 overlay → a plain virsh restore would fail.
+  - Diffed l1-ubuntu-current.xml against the save's embedded XML: only meaningful difference is the disk source path (correct post-merge target). UUID, MAC, all PCI addresses, machine type, vCPU count, memory all byte-identical → safe  
+  to use with virsh restore --xml.
+  - Verified pc-q35-6.2 machine type is supported and default libvirt network is up.                                                                                                                                                        
+
+  6. Identified a second libvirtd already running
+
+  Found PID 379078 — a leftover daemon from your earlier simx/chipsim install, running with a config file (/opt/simx/air_api/utils/libvirtd_host.conf) that has since been deleted from disk. Harmless (different socket), did not touch it.
+
+  7. Downgraded QEMU to 6.2.30 from jammy-updates
+
+  Pinned all 8 qemu-related packages to 1:6.2+dfsg-2ubuntu6.30:
+  DOWNGRADED: qemu-system-x86, qemu-system-{common,data,arm,gui,misc}, qemu-utils, qemu-block-external
+  REMOVED:    qemu-system-modules-{opengl,spice}   (only exist in 9.x; built into core in 6.2)
+  This matches the pc-q35-6.2 machine type your save was built on, and is the canonical libvirt-8.0.0 ↔ qemu-6.2 jammy pairing.
+
+  Cleared libvirt's capabilities cache and restarted libvirtd so it'd re-probe the new qemu binary.
 
