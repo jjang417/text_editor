@@ -598,25 +598,7 @@ root@dl345g11-0305:~/nested_qemu# ssh nvidia@192.168.122.121
 nvidia@192.168.122.121's password: nvidia
 Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-176-generic x86_64)
 
- * Documentation:  https://help.ubuntu.com
- * Management:     https://landscape.canonical.com
- * Support:        https://ubuntu.com/pro
-
- System information as of Tue Apr 28 05:08:49 AM UTC 2026
-
- * Strictly confined Kubernetes makes edge and IoT secure. Learn how MicroK8s
-   just raised the bar for easy, resilient and secure K8s cluster deployment.
-
-   https://ubuntu.com/engage/secure-kubernetes-at-the-edge
-
-Expanded Security Maintenance for Applications is not enabled.
-
-66 updates can be applied immediately.
-6 of these updates are standard security updates.
-To see these additional updates run: apt list --upgradable
-
-7 additional security updates can be applied with ESM Apps.
-Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+... <SNIP> ...
 
 New release '24.04.4 LTS' available.
 Run 'do-release-upgrade' to upgrade to it.
