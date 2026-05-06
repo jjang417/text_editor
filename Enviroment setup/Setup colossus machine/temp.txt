@@ -8,7 +8,7 @@
 
  <X86 768 GB DDR machine>
   ssh root@10.63.145.118 
-  password: jjydl325g11-2067 
+  password: jjydl325g11-2067
 
 <Enable root user permission>
 root@dl325g11-2067:/localhome/local-jjang# cat /etc/ssh/sshd_config 
