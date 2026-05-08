@@ -118,8 +118,7 @@ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;
 
 nvidia@pset$ sudo sysctl -w kernel.watchdog_thresh=0
 kernel.watchdog_thresh = 0
-nvidia@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBoots
-trapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+nvidia@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
 
 Thu Jan  1 00:08:00 1970       
 +-----------------------------------------------------------------------------------------+
