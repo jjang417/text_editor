@@ -16,3 +16,105 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [----------] 1 test from NoClientAllocTSG/ChannelTest
 [ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
 ...
+
+
+
+
+root@ubuntu-L1:/home/nvidia# rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio 
+rmmod: ERROR: Module nvidia_drm is not currently loaded
+rmmod: ERROR: Module nvidia_modeset is not currently loaded
+root@ubuntu-L1:/home/nvidia# bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2' 
+Processing GPU: 0003:01:00.0
+Wrote external GPU0 registry path
+Processing GPU: 0006:01:00.0
+Wrote external GPU1 registry path
+RM loaded.
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi
+Mon May 11 05:30:47 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 615.00                 KMD Version: 615.00        CUDA UMD Version: 13.4     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Graphics Device                On  |   00000003:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  12288MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  Graphics Device                On  |   00000006:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  12288MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (2275 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (2275 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (2275 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (2081 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (2083 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (2092 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (2170 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (2171 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (2175 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (2106 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (2107 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (2111 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (2104 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (2106 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (2111 ms total)
+[  PASSED  ] 1 test.
+
+

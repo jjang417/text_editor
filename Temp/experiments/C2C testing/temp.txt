@@ -120,6 +120,10 @@ nvidia@pset$ sudo sysctl -w kernel.watchdog_thresh=0
 kernel.watchdog_thresh = 0
 nvidia@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
 
+Or:
+
+nvidia@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideC2CLinks=0x3fff;RMForceNetlistNumber=2;RmDisableCtxswUcodeFromChiplib=1'
+
 Thu Jan  1 00:08:00 1970       
 +-----------------------------------------------------------------------------------------+
 | NVIDIA-SMI 615.03                 KMD Version: 615.03        CUDA UMD Version: 13.4     |
@@ -219,3 +223,48 @@ root@pset$ busybox devmem 0x200000000000 32
 GPU fmod log:
 AssertMsg: [ nvclk=674331 . . hshub_gchi.cpp 7287 ]  < failed assert is '(vc == expected_vc)' > Got GCHI request on unsupported VC = 0. Expected VC = 6
 AssertMsg: [ nvclk=674331 . . hshub_gchi.cpp 7287 ]  # < Stack trace - [stack:1:32:1] (trim_end:show_max:trim_top) - 11 frames pre-trimmed > :
+
+
+
+nvidia@pset$ sudo -s
+root@pset$ sudo sysctl -w kernel.watchdog_thresh=0
+kernel.watchdog_thresh = 0
+root@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r
+'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBoots
+> ^CapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+
+root@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r
+'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstr
+apMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+Thu Jan  1 00:17:27 1970       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 615.03                 KMD Version: 615.03        CUDA UMD Version: 13.4     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Graphics Device                On  |   00000003:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  Graphics Device                On  |   00000006:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+RM loaded.
+root@pset$ sudo -s
+root@pset$ busybox devmem 0x220000000000 32
+0x00000000
+root@pset$ busybox devmem 0x200000000000 32
+0x00000000
+root@pset$ 
+
