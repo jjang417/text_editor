@@ -1,0 +1,62 @@
+
+
+bash-4.2$ tcsh
+dc7-container-xterm-24:~> setenv NO_AT_BRIDGE 1
+dc7-container-xterm-24:~> unsetenv DBUS_SESSION_BUS_ADDRESS
+dc7-container-xterm-24:~> setenv DISPLAY dc7-container-xterm-24:207
+dc7-container-xterm-24:~> unsetenv XDG_RUNTIME_DIR
+dc7-container-xterm-24:~> env QSUB_OVERRIDE_OS=rel7x env QSUB_APPLICATION=c75docker QSUB_APPLICATION_DEFAULT=affinity qsub -P mobile_tb500_arch_sys -q o_pri_interactive_cpu_16G --projectMode direct -n 4 -R span\[hosts=1\] gnome-terminal
+Job <1859968853> is submitted to queue <o_pri_interactive>.
+dc7-container-xterm-24:~> 
+
+[How to donwload HW Tree NET#15 branch source code]
+
+https://nvidia.atlassian.net/wiki/spaces/TegraAM/pages/2686622536/TB50x+Cmodel+Branch+-+NET+Releases  
+
+mkdir HW_TREE_NET15/ 
+
+cd HW_TREE_NET15/ 
+
+pwa create -branch nvmobile_tb50x_cmod_NET_Rel_1 NET15_clone_tree
+
+cd NET15_clone_tree
+
+nvprojectname save . business=mobile chip=tb500 group=arch team=sys
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/tree.make.suggested
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/TOT
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/etc
+
+//Download cmod and nv_top source code to LSF machine as example
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/cmod/... 
+
+pwa install //hw/nvmobile_tb50x_cmod_NET_Rel_1/ip/socd/nv_top/4.0/cmod/nv_top/scsim/... 
+
+pwa sync
+
+cd hw/nvmobile_tb50x_cmod_NET_Rel_1/
+
+// Use gsim command to build librarys
+
+gsim -- tgen_rwmp.pl -arch Linux_x86_64 -target RS_CSIM -chip tb500 --testArgsMore -force_linux_64bit -failOnZeroTests -level as2/tb500/as2_sc_factory_sanity_64.lvl -maxFileSize 100000 -queue o_cpu_32G_15M | & tee build.log
+
+// Alternatively, you could use umake command to build particular modules
+
+umake -skip build_quality_checks tb500_Linux_x86_64_nv_top4-cmod_gpu_wrapper.build
+
+// Another build command to build for VDK-X environment
+
+/usr/bin/env LD_LIBRARY_PATH=/home/tools/synopsys/vdk/X-2025.06u48/SLS/linux/common/libso-gcc-13.3-64:$LD_LIBRARY_PATH NV_BUILD_SKIP_OS_CHECK=1 IGNORE_ATRACE_ERROR=1 CMOD_SYSC_BUILD=vdk NV_BUILD_VDK_TOP=1 QSUB_APPLICATION=r89docker QSUB_OVERRIDE_OS=rel8x QSUB_APPLICATION_DEFAULT=affinity umake -skip build_quality_checks tb500_Linux_x86_64_nv_top4-cmod_gpu_wrapper.build
+
+// After build complete, you should be able to see the output librarys
+
+source_dir="/home/scratch.jjang_sw/HW_TREE_NET15/NET15_clone_tree/output/NET15_clone_tree"
+destination_dir="/home/scratch.jjang_sw/TB500_TEST_LIB"
+
+# Array of library paths (relative to the source directory)
+
+"HW_TREE_NET15/NET15_clone_tree/output/NET15_clone_tree/vot/cmod/gpu/scsim/tb500_Linux_x86_64/libtb500_gpu_sc.so"
+"HW_TREE_NET15/NET15_clone_tree/output/NET15_clone_tree/vot/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/tb500_Linux_x86_64/libtb500_gpu_wrapper_fsim.so"

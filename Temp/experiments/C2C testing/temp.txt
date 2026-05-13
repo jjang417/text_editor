@@ -202,27 +202,6 @@ root@pset$ busybox devmem 0x200000000000 32
 
 
 
-[Failure test case]
-root@pset$ busybox devmem 0x802100878e58 32 0x1
-root@pset$ busybox devmem 0x802100878e58 32
-0x00000001
-root@pset$ busybox devmem 0x802100879e58 32
-0x00000000
-root@pset$ busybox devmem 0x802100879e58 32 0x1
-root@pset$ busybox devmem 0x802100879e58 32
-0x00000001
-root@pset$ busybox devmem 0x802100878e48 32
-0x00000001
-root@pset$ busybox devmem 0x802100878e48 32 0x1
-root@pset$ busybox devmem 0x802100878e48 32
-0x00000002
-root@pset$ busybox devmem 0x802100879e48 32 0x1
-root@pset$ busybox devmem 0x802100879e48 32
-root@pset$ busybox devmem 0x200000000000 32
-
-GPU fmod log:
-AssertMsg: [ nvclk=674331 . . hshub_gchi.cpp 7287 ]  < failed assert is '(vc == expected_vc)' > Got GCHI request on unsupported VC = 0. Expected VC = 6
-AssertMsg: [ nvclk=674331 . . hshub_gchi.cpp 7287 ]  # < Stack trace - [stack:1:32:1] (trim_end:show_max:trim_top) - 11 frames pre-trimmed > :
 
 
 
@@ -234,8 +213,7 @@ root@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r
 > ^CapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
 
 root@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r
-'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstr
-apMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
 Thu Jan  1 00:17:27 1970       
 +-----------------------------------------------------------------------------------------+
 | NVIDIA-SMI 615.03                 KMD Version: 615.03        CUDA UMD Version: 13.4     |
@@ -268,3 +246,15 @@ root@pset$ busybox devmem 0x200000000000 32
 0x00000000
 root@pset$ 
 
+
+
+[VDK-X]
+
+sudo -s 
+sudo sysctl -w kernel.watchdog_thresh=0
+rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio
+bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000'
+
+nvidia-persistenced -V
+
+nvidia-smi
