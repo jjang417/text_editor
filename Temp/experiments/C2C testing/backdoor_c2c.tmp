@@ -1,0 +1,14 @@
+
+simout.txt log:
+
+Info: [ nvclk=-1 nv_top . nv_top_full.cpp 634 ] Created backdoor memory mapfile: /proc/198456/fd/3
+
+-chipargs -use_linsim_memstore -chipargs -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -chipargs -linsim_memstore_lib  -chipargs -linsim_client_name kepler_fmodel -chipargs -linsim_store_name /proc/198456/fd/3
+
+
+[How to send backdoor mapfile to remote devproc GPU]
+
+1. Parse simout.txt and look for line "Created backdoor memory mapfile: /proc/198456/fd/3" and extract mapfile "/proc/198456/fd/3"
+
+2. Update devproc json file "$GPU_DEVPROC_ROOT_DIR/devproc/conf/devproc_gr102_conf_0.json" and "$GPU_DEVPROC_ROOT_DIR/devproc/conf/devproc_gr102_conf_1.json" to append -use_linsim_memstore -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -linsim_memstore_lib libtb500_backdoormem.so -linsim_client_name kepler_fmodel -linsim_store_name /proc/198456/fd/3 at the tail of item "chipargs"
+
