@@ -260,18 +260,22 @@ nvidia-persistenced -V
 nvidia-smi
 
 
-[Buildroot OS]
+[Buildroot OS] VRU on SCSIM
 
 RM_LOAD_CMD="sudo sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'; sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'"
 
-sudo sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'
-sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+
+for commlib GPU:
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
 
 
 root@pset$ busybox devmem 0x200000000000 32
 0x00000000
 
-root@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+root@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 --verbose
 Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [==========] Running 1 test from 1 test suite.
 [----------] Global test environment set-up.
@@ -283,7 +287,7 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test suite ran. (229 ms total)
 [  PASSED  ] 1 test.
-root@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+root@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 --verbose
 Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [==========] Running 1 test from 1 test suite.
 [----------] Global test environment set-up.
@@ -333,3 +337,9 @@ root@ubuntu-L1:/home/nvidia# busybox devmem 0x200000000000 32
 0x0000005A
 
 
+[GPU chipargs review]
+
+-smTrapStateChangeCheckInterval=10000 -event_cover=1 -frontdoor_soc_path=1 -c2c0=CPU -c2c1=CPU -c2c2=CPU -c2c3=CPU -c2c4=CPU -c2c5=CPU -c2c6=CPU -c2c7=CPU -c2c8=CPU -c2c9=CPU -c2c10=CPU -c2c11=CPU -c2c12=CPU -c2c13=CPU -send_atr_over_xbar -floorsweep c2c_disable:0x3 -c2c_disable -smAllowUninitializedRegister -texHandleErrorsLikeRTL -idle_timeout 0 -use_gen6 -simtxt max_nvclk 0 -chipPOR=gr152 -use_bdf_value=0x100 -disable_ats_backdoor -fsf_mode -fslib_mode_disable -floorsweep=fbp_enable:0x1:fbio_enable:0xf -floorsweep=gpc_enable:0x1:gpc_tpc_enable:0:0x1:gpc_cpc_enable:0:0x1 -floorsweep=syspipe_enable:0x1 -sriov_BDFShiftSizeInSysmemAddr=56 -fmod_hiearchy_provides_die_id -mmu_frontdoor_iodie -noinstance_ofa -noinstance_display -drop_pmgr_pri_accesses -mux_sel_from_sys_ctrl -mux_sel_from_sys_ctrl -floorsweep=c2c_disable:0x3:syspipe_enable:0x01:display_disable:1:pmu_enable:0x1:oobhub_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1 -fc_ltc_slice_run_loop -upstream_path_gen6 -pce_connected_to_cehub -noinstance_nvjpg -noinstance_nvenc -noinstance_devices=gr1,gr2,gr3,gr4,gr5,gr6,gr7 -noinstance_nvdec -xalep2fb_en -use_linsim_memstore -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -linsim_memstore_lib -linsim_client_name kepler_fmodel -linsim_store_name /proc/36/fd/3
+
+
+-sriov_BDFShiftSizeInSysmemAddr=56 -disable_ats_backdoor -fsf_mode -fslib_mode_disable -mmu_frontdoor_iodie -fc_ltc_slice_run_loop -mux_sel_from_sys_ctrl -drop_pmgr_pri_accesses -pce_connected_to_cehub -simtxt max_nvclk=0 -nvlink_datapath_to_nvlc -floorsweep=nvlc_perlink_enable:0:0x5:c2c_disable:0x3:syspipe_enable:0x01:display_disable:1:pmu_enable:0x1:oobhub_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1:gpc_enable:0x1:gpc_tpc_enable:0:0x1:gpc_cpc_enable:0:0x1:fbp_enable:0x1:fbio_enable:0xf -noinstance_nvenc -noinstance_nvdec -smAllowUninitializedRegister sim-terminate-timeout=0 -use_gen6 -fmod_hiearchy_provides_die_id -gpu_instance=0 -xalep2fb_en -temp_enable_fbhub_node_ids -upstream_path_gen6 -c2c_disable -nvlpw_rlw_csl_assertions_instead_of_errors -chipPOR=gr102 -frontdoor_soc_path=1 -smTrapStateChangeCheckInterval=10000 -event_cover=1 -c2c0=CPU -c2c1=CPU -c2c2=CPU -c2c3=CPU -c2c4=CPU -c2c5=CPU -c2c6=CPU -c2c7=CPU -c2c8=CPU -c2c9=CPU -c2c10=CPU -c2c11=CPU -c2c12=CPU -c2c13=CPU -send_atr_over_xbar -use_linsim_memstore -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -linsim_memstore_lib -linsim_client_name kepler_fmodel -linsim_store_name /proc/36/fd/3
