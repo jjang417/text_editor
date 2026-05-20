@@ -1,0 +1,15 @@
+
+
+
+File: /home/scratch.jjang_sw_1/GPU_FMOD/hw/nvgpu_gr102s/ip/inf/nvsc/mainline/clib/nvsim/sim_mainline.cpp
+
+// Added for HOST msix interrupt which is used in chiplib_f and set
+// in the c11_dummy of host
+bool sim_get_msix_intr(msix_intr_t &msix_intr)
+{
+    if (msixIntrQueue.size() == 0)
+        return false;
+    msix_intr = msixIntrQueue.front();
+    msixIntrQueue.pop_front();
+    return true;
+}

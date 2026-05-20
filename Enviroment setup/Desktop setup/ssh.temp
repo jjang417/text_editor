@@ -1,0 +1,5 @@
+https://nvidia.service-now.com/esc?id=kb_article&sysparm_article=KB0021716
+
+Connect to your IT Ubuntu Linux
+ssh [nvidia_username]@[IP] or ssh [nvidia_username]@[hostname].dyn.nvidia.com
+Open RealVNC Viewer (no need to register or log in) and connect using IP or [hostname].dyn.nvidia.com
