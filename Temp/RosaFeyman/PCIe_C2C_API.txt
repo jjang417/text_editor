@@ -1,3 +1,33 @@
+
+  Summary: PCIe and C2C Transactions Between Vera and Remote CommLib GPU
+
+  This document outlines the architectural integration paths for two distinct transaction types in a GPU simulation environment:
+
+  PCIe Transaction Architecture
+
+  The PCIe pathway comprises four binding layers:
+
+  1. SoC-to-GPU Wrapper: Interrupt signals and memory buses connect the system die to the GPU wrapper through multiple PCIe interfaces (configuration, memory, VDM, display).
+  2. GPU Wrapper-to-CommLib: The wrapper binds interrupt handlers and memory buses to the commlib GPU module, establishing bidirectional communication paths.
+  3. CommLib-to-External Adapter: Four API categories handle external communication:
+    - Configuration: Read/write operations targeting PCI configuration space via pcie_config_read/write
+    - MMIO: Memory-mapped I/O access through pcie_mmio_read/write
+    - System Memory: Direct system access callbacks for GPU memory operations
+    - Legacy IRQ: Interrupt assertion/deassertion notifications
+  4. Adapter-to-Remote GPU: The external adapter interfaces with the remote GPU's functional model through fmodel mutex-protected operations on configuration registers and bus memory
+   blocks.
+
+  C2C Transaction Architecture
+
+  Cache-to-Cache transactions follow a parallel but distinct path:
+
+  1. SoC-to-Wrapper Binding: Compute die connects to GPU wrapper via CHI protocol sockets.
+  2. Wrapper-to-Transactor: A dedicated CHI transactor mediates between the wrapper and external commlib adapter.
+  3. Transactor-to-Adapter: Request, data, and response packets flow through registered callbacks that decode request types (read, write, ATS, snoop).
+  4. Adapter-to-Remote GPU: The commlib adapter establishes bidirectional callbacks with the remote GPU devproc module for processing memory requests, data transfers, and responses.
+
+  Both pathways ultimately converge at the remote GPU's functional model through shared synchronization primitives.
+
 # PCIe transaction between Vera to remote commlib GPU
 
 a. SoC to gpu_wrapper binding
