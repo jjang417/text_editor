@@ -1,0 +1,1050 @@
+# PCIe and C2C Transactions: Vera ⇄ Remote CommLib GPU
+
+This document traces the call paths for **PCIe** and **C2C (Chip to Chip)** transactions
+between the Vera SoC simulation and a remote CommLib GPU. Each section follows the same
+four-layer binding chain: SoC → GPU wrapper → CommLib → external adapter → remote GPU.
+
+## Path aliases
+
+To keep snippets readable, this doc uses two aliases for the recurring long paths:
+
+| Alias | Expands to |
+|-------|-----------|
+| `$NET15` | `/home/jjang/Work/remote_fs/scratch/HW_TREE_NET15/NET15_clone_tree/hw/nvmobile_tb50x_cmod_NET_Rel_1` |
+| `gitlab://` | `https://gitlab-master.nvidia.com/systemsim/next` |
+
+## Table of contents
+
+- [Architectural overview](#architectural-overview)
+- [PCIe transaction](#pcie-transaction-vera--remote-commlib-gpu)
+  - [a. SoC → gpu_wrapper binding](#a-soc--gpu_wrapper-binding)
+  - [b. gpu_wrapper → sc_gpu_commlib binding](#b-gpu_wrapper--sc_gpu_commlib-binding)
+  - [c. sc_gpu_commlib → external commlib_adapter binding](#c-sc_gpu_commlib--external-commlib_adapter-binding)
+  - [d. External commlib_adapter → remote GPU](#d-external-commlib_adapter--remote-gpu)
+- [C2C transaction](#c2c-transaction-vera--remote-commlib-gpu)
+  - [a. SoC → gpu_wrapper binding](#a-soc--gpu_wrapper-binding-1)
+  - [b. gpu_wrapper → commlib_chi_transactor binding](#b-gpu_wrapper--commlib_chi_transactor-binding)
+  - [c. commlib_chi_transactor → external commlib_adapter binding](#c-commlib_chi_transactor--external-commlib_adapter-binding)
+  - [d. External commlib_adapter → remote GPU](#d-external-commlib_adapter--remote-gpu-1)
+
+---
+
+## Architectural overview
+
+### PCIe pathway (four binding layers)
+
+1. **SoC → GPU wrapper** — interrupt lines and memory buses connect the system die to
+   the GPU wrapper through four PCIe interfaces: *config*, *memory*, *VDM*, *TDisp*.
+2. **GPU wrapper → CommLib** — the wrapper rebinds interrupts and memory buses onto the
+   `sc_gpu_commlib` module, establishing bidirectional paths.
+3. **CommLib → external adapter** — four API families cross the adapter boundary:
+   - **Config** — `pcie_config_read` / `pcie_config_write`
+   - **MMIO** — `pcie_mmio_read` / `pcie_mmio_write`
+   - **System memory** — `register_gpu_sysmem_callback` + read/write callbacks
+   - **Legacy IRQ** — assert/deassert notifications
+4. **Adapter → remote GPU** — the external adapter talks to the remote GPU's functional
+   model via `fmodel_mutex`-protected ops on configuration registers and bus memory.
+
+### C2C pathway (four binding layers)
+
+1. **SoC → GPU wrapper** — compute die ↔ GPU wrapper via CHI protocol sockets.
+2. **GPU wrapper → CHI transactor** — `commlib_chi_transactor` mediates between the
+   wrapper and the external CommLib adapter.
+3. **CHI transactor → adapter** — request / data / response packets flow through
+   registered callbacks that decode CHI request types (read, write, ATS, snoop).
+4. **Adapter → remote GPU** — bidirectional callbacks into the remote GPU's `devproc`
+   module handle memory requests, data transfers, and responses.
+
+Both pathways converge at the remote GPU's functional model under shared sync primitives.
+
+---
+
+# PCIe transaction (Vera → remote CommLib GPU)
+
+## a. SoC → gpu_wrapper binding
+
+**File:** `$NET15/ip/socd/nv_top/4.0/cmod/nv_top/scsim/nv_top_full.cpp`
+
+```cpp
+if (GPVar("use_commlib_gpu_on_pcie_c2", 0).i()) {
+    connect(sc_gpu_commlib_wrapper_c2->gpu_intr1, system_die->c2_PCIGpu_intr1);
+    connect(sc_gpu_commlib_wrapper_c2->gpu_intr2, system_die->c2_PCIGpu_intr2);
+    connect(sc_gpu_commlib_wrapper_c2->gpu_intr3, system_die->c2_PCIGpu_intr3);
+    connect(sc_gpu_commlib_wrapper_c2->gpu_intr4, system_die->c2_PCIGpu_intr4);
+
+    //stub_port(sc_gpu_commlib_wrapper_c2->gpu_display_intr);
+    system_die->c2_PCIMem.bind(sc_gpu_commlib_wrapper_c2->pcie2gpu_mem);
+    system_die->c2_PCIVdm.bind(sc_gpu_commlib_wrapper_c2->pcie2gpu_vdm);
+    system_die->c2_PCITdisp.bind(sc_gpu_commlib_wrapper_c2->pcie2gpu_tdisp);
+    system_die->c2_PCIConfig.bind(sc_gpu_commlib_wrapper_c2->gpuPCIConfig);
+    sc_gpu_commlib_wrapper_c2->gpu2pcie_bus.bind(system_die->c2_PCIVdmSlave);
+}
+```
+
+## b. gpu_wrapper → sc_gpu_commlib binding
+
+**File:** `$NET15/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/gpu_commlib_wrapper.cpp`
+
+```cpp
+void gpu_commlib_wrapper::bind_interfaces() {
+    cslDebug((55, "%s called in gpu_commlib_wrapper\n", __FUNCTION__));
+
+    // Bind interrupt interface
+    sc_gpu_commlib->gpu2ictlr_intr1(gpu_intr1);
+    sc_gpu_commlib->gpu2ictlr_intr2(gpu_intr2);
+    sc_gpu_commlib->gpu2ictlr_intr3(gpu_intr3);
+    sc_gpu_commlib->gpu2ictlr_intr4(gpu_intr4);
+
+    stub_tlm_target(sc_gpu_commlib->mc2gpu_reset);
+
+    sc_gpu_commlib->gpu2mc_vpr_bus.bind(multi_passthrough_target_stub.in);
+    sc_gpu_commlib->gpu2mc_axi_bus.bind(multi_passthrough_target_stub.in);
+
+    ccplex2gpu_escape_bus_target_socket.bind(sc_gpu_commlib->snic2gpu_escape_bus);
+
+    pcie2gpu_mem.bind(sc_gpu_commlib->snic2gpu_axi_bus);
+    pcie2gpu_vdm.bind(sc_gpu_commlib->snic2gpu_axi_bus_vdm);
+    pcie2gpu_tdisp.bind(sc_gpu_commlib->snic2gpu_pcie_tdisp_escape);
+    gpuPCIConfig.bind(sc_gpu_commlib->gpuPCIConfig);
+    sc_gpu_commlib->gpu2pci_bus.bind(gpu2pcie_bus);
+    sc_gpu_commlib->gpu2mc_ats_bus.bind(this->gpu2mc_ats_bus);
+
+    stub_tlm_target(sc_gin_shim->disp_2gin_host_interrupt0);
+    stub_tlm_target(sc_gin_shim->disp_2gin_host_interrupt1);
+    stub_tlm_target(sc_gin_shim->disp_2gin_gsp);
+    stub_tlm_target(sc_gin_shim->disp_2gin_pmu);
+
+    if (sc_commlib_chi_transactor != NULL) {
+        sc_commlib_chi_transactor->init_socket.bind(this->gpu_c2c_init_socket);
+        this->gpu_c2c_targ_socket.bind(sc_commlib_chi_transactor->targ_socket);
+    }
+
+    connect(sc_gin_shim->gin_shim_to_gpu_out, sc_gpu_commlib->gpu2display_intr);
+    connect(sc_gin_shim->gin_shim_msg, sc_gpu_commlib->msg_from_gin);
+}
+```
+
+## c. sc_gpu_commlib → external commlib_adapter binding
+
+### PCIe config API
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_sc_commlib.cpp`
+
+```cpp
+gpuPCIConfig( gpu_commlib_ch );
+```
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_pcie_commlib_intf.cpp`
+
+```cpp
+gpu_pcie_commlib_intf::pci_status_type
+gpu_pcie_commlib_intf::PCIRead (pci_addr_type addr, uint32_t bytes, uint8_t *data);
+
+gpu_pcie_commlib_intf::pci_status_type
+gpu_pcie_commlib_intf::PCIWrite(pci_addr_type addr, uint32_t bytes, uint8_t *data);
+```
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_sc_commlib.cpp`
+
+```cpp
+void     gpu_sc_commlib::GpuConfigWrite(uint32_t address, uint32_t data);
+uint32_t gpu_sc_commlib::GpuConfigRead (uint32_t address);
+
+pcie_config_read = (pcie_read_t) dlsym(commlib_adapter, "pcie_config_read");
+if (!pcie_config_read) {
+    SCSIM_ERROR("GPU_STUB: Fail to find symbol 'pcie_config_read' from commlib_adapter, %s\n", dlerror());
+    return;
+}
+
+pcie_config_write = (pcie_write_t) dlsym(commlib_adapter, "pcie_config_write");
+if (!pcie_config_write) {
+    SCSIM_ERROR("GPU_STUB: Fail to find symbol 'pcie_config_write' from commlib_adapter, %s\n", dlerror());
+    return;
+}
+```
+
+### PCIe MMIO API
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_sc_base.cpp`
+
+```cpp
+this->snic2gpu_axi_bus.register_b_transport(this, &gpu_sc_base::snic2gpu_axi_b_transport);
+
+// SNIC2GPU b_transport: handles AXI bus requests from SNIC to GPU
+void gpu_sc_base::snic2gpu_axi_b_transport(int ID, tlm::tlm_generic_payload& gp, sc_time& delay)
+{
+    gp.set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
+    handle_snic2gpu_axi(ID, gp, delay);
+}
+```
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_sc_commlib.cpp`
+
+```cpp
+// SNIC2GPU (ACB) AXI bus handler
+void gpu_sc_commlib::handle_snic2gpu_axi(int ID, tlm::tlm_generic_payload& gp, sc_time& delay);
+
+pcie_mmio_read = (pcie_mmio_read_t) dlsym(commlib_adapter, "pcie_mmio_read");
+if (!pcie_mmio_read) {
+    SCSIM_ERROR("GPU_STUB: Fail to find symbol 'pcie_mmio_read' from commlib_adapter, %s\n", dlerror());
+    return;
+}
+
+pcie_mmio_write = (pcie_mmio_write_t) dlsym(commlib_adapter, "pcie_mmio_write");
+if (!pcie_mmio_write) {
+    SCSIM_ERROR("GPU_STUB: Fail to find symbol 'pcie_mmio_write' from commlib_adapter, %s\n", dlerror());
+    return;
+}
+```
+
+### PCIe system-memory API
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_sc_commlib.cpp`
+
+```cpp
+register_gpu_sysmem_callback = (register_gpu_sysmem_callback_t)
+    dlsym(commlib_adapter, "register_gpu_sysmem_callback");
+if (!register_gpu_sysmem_callback) {
+    SCSIM_ERROR("GPU_STUB: Fail to find symbol 'register_gpu_sysmem_callback' from commlib_adapter, %s\n", dlerror());
+    return;
+} else {
+    register_gpu_sysmem_callback(GpuToSoCSysMemRead, GpuToSoCSysMemWrite);
+}
+
+void gpu_sc_commlib::GpuToSoCSysMemRead (uint32_t commlib_instance_num, uint64_t paddr,
+                                         uint32_t data_len, uint8_t *data_ptr);
+void gpu_sc_commlib::GpuToSoCSysMemWrite(uint32_t commlib_instance_num, uint64_t paddr,
+                                         uint32_t data_len, uint8_t *data_ptr);
+```
+
+### PCIe legacy IRQ API
+
+**File:** `$NET15/cmod/gpu/scsim/gpu_sc_commlib.cpp`
+
+```cpp
+void gpu_sc_commlib::gpu2lic_intr_req_handler()
+{
+    cslAssertMsg((instance_num < g_gpu_sc_commlib_ptr.size()),
+                ("GPU_STUB: gpu2lic_intr_req_handler() instance_num %u out of range (size = %zu)\n",
+                instance_num, g_gpu_sc_commlib_ptr.size()));
+    cslAssertMsg((g_gpu_sc_commlib_ptr[instance_num] != nullptr),
+                ("GPU_STUB: gpu2lic_intr_req_handler() g_gpu_sc_commlib_ptr[%u] is NULL\n", instance_num));
+
+    // Having computed the current interrupt state, push it out to LIC
+    if (g_gpu_sc_commlib_ptr[instance_num]->has_gpu_irq_asserts) {
+        Info("GPU_STUB: gpu2lic_intr_req_handler() report GPU IRQ assert instance_num = %d \n", instance_num);
+        gpu2ictlr_intr1.write(1);
+    } else {
+        Info("GPU_STUB: gpu2lic_intr_req_handler() report GPU IRQ deassert instance_num = %d \n", instance_num);
+        gpu2ictlr_intr1.write(0);
+    }
+    gpu2ictlr_intr2.write(0);
+    gpu2ictlr_intr3.write(0);
+    gpu2ictlr_intr4.write(0);
+}
+```
+
+## d. External commlib_adapter → remote GPU
+
+### PCIe config read/write
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L219`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L219)
+
+```cpp
+void commslib_pcie_adapter::pcie_config_read(uint32_t addr, uint32_t &data)
+{
+    DEBUG("commlib_instance_num = " << commlib_info.instance_num << " addr = 0x" << std::hex << addr);
+
+    PCIE_payload_t payload;
+    payload.cpu_access.offset     = addr;
+    payload.cpu_access.dfid       = 0x0; // Accessing PF
+    payload.cpu_access.addr_space = pcie_space_config;
+    payload.cpu_access.width      = 4;
+    payload.cpu_access.pcie_op    = pcie_op_read;
+    pcie_conn->PCIEConfigRead(&payload);
+
+    DEBUG("data = 0x" << std::hex << *(int *)payload.cpu_access.data);
+    memcpy(&data, payload.cpu_access.data, sizeof(unsigned int));
+}
+```
+
+**File:** [`gitlab://commlib/src/commlib.cpp#L409`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib.cpp?ref_type=heads#L409)
+
+```cpp
+commLib_error_t PCIEConnection::PCIEConfigRead(PCIE_payload_t *payload);
+```
+
+**File:** [`gitlab://devproc/pcie_utilities.cpp#L100`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/pcie_utilities.cpp?ref_type=heads#L100)
+
+```cpp
+commLib_error_t ProcessConfigRead(PCIE_payload_t *payload)
+{
+    LOG(PCIE, INFO, "CONFIG_READ START: 0x%lx/%ld\n",
+        payload->cpu_access.offset, payload->cpu_access.width);
+
+    NvU032 cfgaddr;
+    cfgaddr = PCI_CFG_ADDR(dsp->dev[dsp->access_gfid].domain, dsp->dev[dsp->access_gfid].bus,
+                           dsp->dev[dsp->access_gfid].device, dsp->dev[dsp->access_gfid].function,
+                           payload->cpu_access.offset);
+
+    uint32_t data = 0x0;
+
+    fmodel_mutex.lock();
+    // Real Fmodel
+    if      (payload->cpu_access.width == 0x1) data = s_pIo->CfgRd08(cfgaddr);
+    else if (payload->cpu_access.width == 0x2) data = s_pIo->CfgRd16(cfgaddr);
+    else if (payload->cpu_access.width == 0x4) data = s_pIo->CfgRd32(cfgaddr);
+    fmodel_mutex.unlock();
+
+    memcpy(payload->cpu_access.data, &data, payload->cpu_access.width);
+
+    LOG(PCIE, INFO, "CONFIG_READ DONE: 0x%lx/%ld: 0x%x\n",
+        payload->cpu_access.offset, payload->cpu_access.width, data);
+
+    return commLib_success;
+}
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L235`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L235)
+
+```cpp
+void commslib_pcie_adapter::pcie_config_write(uint32_t addr, uint32_t &data)
+{
+    DEBUG("commlib_instance_num = " << commlib_info.instance_num << " addr = 0x" << std::hex << addr);
+
+    PCIE_payload_t payload;
+    payload.cpu_access.offset     = addr;
+    payload.cpu_access.dfid       = 0x0; // Accessing PF
+    payload.cpu_access.addr_space = pcie_space_config;
+    payload.cpu_access.width      = 4;
+    payload.cpu_access.pcie_op    = pcie_op_write;
+
+    memcpy(payload.cpu_access.data, &data, sizeof(unsigned int));
+    DEBUG("data = 0x" << std::hex << *(int *)payload.cpu_access.data);
+    pcie_conn->PCIEConfigWrite(&payload);
+}
+```
+
+**File:** [`gitlab://commlib/src/commlib.cpp#L431`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib.cpp?ref_type=heads#L431)
+
+```cpp
+commLib_error_t PCIEConnection::PCIEConfigWrite(PCIE_payload_t *payload);
+```
+
+**File:** [`gitlab://devproc/pcie_utilities.cpp#L134`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/pcie_utilities.cpp?ref_type=heads#L134)
+
+```cpp
+commLib_error_t ProcessConfigWrite(PCIE_payload_t *payload)
+{
+    LOG(PCIE, INFO, "CONFIG_WRITE START: 0x%lx/%ld\n",
+        payload->cpu_access.offset, payload->cpu_access.width);
+
+    NvU032 cfgaddr;
+    cfgaddr = PCI_CFG_ADDR(dsp->dev[dsp->access_gfid].domain, dsp->dev[dsp->access_gfid].bus,
+                           dsp->dev[dsp->access_gfid].device, dsp->dev[dsp->access_gfid].function,
+                           payload->cpu_access.offset);
+
+    uint32_t data = 0x0;
+    memcpy((void *)&data, payload->cpu_access.data, payload->cpu_access.width);
+
+    fmodel_mutex.lock();
+    // Real Fmodel
+    if      (payload->cpu_access.width == 0x1) s_pIo->CfgWr08(cfgaddr, *((NvU032 *)payload->cpu_access.data));
+    else if (payload->cpu_access.width == 0x2) s_pIo->CfgWr16(cfgaddr, *((NvU032 *)payload->cpu_access.data));
+    else if (payload->cpu_access.width == 0x4) s_pIo->CfgWr32(cfgaddr, *((NvU032 *)payload->cpu_access.data));
+    fmodel_mutex.unlock();
+
+    LOG(PCIE, INFO, "CONFIG_WRITE DONE: 0x%lx/%ld: 0x%x\n",
+        payload->cpu_access.offset, payload->cpu_access.width, data);
+
+    return commLib_success;
+}
+```
+
+### PCIe MMIO read/write
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L254`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L254)
+
+```cpp
+void commslib_pcie_adapter::pcie_mmio_read(uint64_t addr, void *data, uint32_t width)
+{
+    DEBUG("[arbitrary-width-mmio-v1] commlib_instance_num = " << commlib_info.instance_num
+        << " addr = 0x" << std::hex << addr << " width = " << std::dec << width);
+
+    PCIE_payload_t payload;
+    payload.cpu_access.offset     = addr;
+    payload.cpu_access.dfid       = 0x0; // Accessing PF
+    payload.cpu_access.addr_space = pcie_space_mmio;
+    payload.cpu_access.width      = width;
+    payload.cpu_access.pcie_op    = pcie_op_read;
+
+    pcie_conn->PCIEMMIORead(&payload);
+    memcpy(data, payload.cpu_access.data, width);
+}
+```
+
+**File:** [`gitlab://commlib/src/commlib.cpp#L452`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib.cpp?ref_type=heads#L452)
+
+```cpp
+commLib_error_t PCIEConnection::PCIEMMIORead(PCIE_payload_t *payload);
+```
+
+**File:** [`gitlab://devproc/pcie_utilities.cpp#L168`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/pcie_utilities.cpp?ref_type=heads#L168)
+
+```cpp
+commLib_error_t ProcessMMIORead(PCIE_payload_t *payload)
+{
+    TRACE_START(PCIE, "ProcessMMIORead start");
+    LOG(PCIE, INFO, "MMIO_READ START: 0x%lx/%ld\n",
+        payload->cpu_access.offset, payload->cpu_access.width);
+
+    BusMemRet ret = BUSMEM_HANDLED;
+
+    fmodel_mutex.lock();
+    ret = s_pBusMem->BusMemRdBlk(payload->cpu_access.offset,
+                                 payload->cpu_access.data,
+                                 payload->cpu_access.width);
+    fmodel_mutex.unlock();
+
+    LOG(PCIE, DEBUG, "Fmodel returned data: %u %u %u %u\n",
+        (unsigned)payload->cpu_access.data[0], (unsigned)payload->cpu_access.data[1],
+        (unsigned)payload->cpu_access.data[2], (unsigned)payload->cpu_access.data[3]);
+
+    if (ret != BUSMEM_HANDLED) {
+        LOG(PCIE, ERROR, "\n MMIO Read transaction failed (address = 0x %lu )",
+            payload->cpu_access.offset);
+        assert(0);
+    }
+
+    LOG(PCIE, INFO, "MMIO_READ DONE: 0x%lx/%ld: 0x%x\n",
+        payload->cpu_access.offset, payload->cpu_access.width,
+        *(uint32_t *)&payload->cpu_access.data);
+
+    TRACE_END(PCIE, "ProcessMMIORead end");
+    return commLib_success;
+}
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L272`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L272)
+
+```cpp
+void commslib_pcie_adapter::pcie_mmio_write(uint64_t addr, const void *data, uint32_t width)
+{
+    DEBUG("[arbitrary-width-mmio-v1] commlib_instance_num = " << commlib_info.instance_num
+        << " addr = 0x" << std::hex << addr << " width = " << std::dec << width);
+
+    PCIE_payload_t payload;
+    payload.cpu_access.offset     = addr;
+    payload.cpu_access.dfid       = 0x0; // Accessing PF
+    payload.cpu_access.addr_space = pcie_space_mmio;
+    payload.cpu_access.width      = width;
+    payload.cpu_access.pcie_op    = pcie_op_write;
+
+    memcpy(payload.cpu_access.data, data, width);
+    pcie_conn->PCIEMMIOWrite(&payload);
+}
+```
+
+**File:** [`gitlab://commlib/src/commlib.cpp#L473`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib.cpp?ref_type=heads#L473)
+
+```cpp
+commLib_error_t PCIEConnection::PCIEMMIOWrite(PCIE_payload_t *payload);
+```
+
+**File:** [`gitlab://devproc/pcie_utilities.cpp#L198`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/pcie_utilities.cpp?ref_type=heads#L198)
+
+```cpp
+commLib_error_t ProcessMMIOWrite(PCIE_payload_t *payload)
+{
+    TRACE_START(PCIE, "ProcessMMIOWrite start");
+    LOG(PCIE, INFO, "MMIO_WRITE START: 0x%lx/%ld\n",
+        payload->cpu_access.offset, payload->cpu_access.width);
+
+    BusMemRet ret = BUSMEM_HANDLED;
+
+    fmodel_mutex.lock();
+    ret = s_pBusMem->BusMemWrBlk(payload->cpu_access.offset,
+                                 payload->cpu_access.data,
+                                 payload->cpu_access.width);
+    fmodel_mutex.unlock();
+
+    if (ret != BUSMEM_HANDLED) {
+        LOG(PCIE, ERROR, "\n MMIO Write transaction failed (address = 0x %lu )",
+            payload->cpu_access.offset);
+        assert(0);
+    }
+
+    LOG(PCIE, INFO, "MMIO_WRITE DONE: 0x%lx/%ld: 0x%x\n",
+        payload->cpu_access.offset, payload->cpu_access.width,
+        *(uint32_t *)&payload->cpu_access.data);
+
+    TRACE_END(PCIE, "ProcessMMIOWrite end");
+    return commLib_success;
+}
+```
+
+### PCIe system-memory read/write
+
+**File:** [`gitlab://devproc/devproc.cpp#L964`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/devproc.cpp?ref_type=heads#L964)
+
+```cpp
+static BusMemRet BusMemBlkAccessDispatch(device_devproc_state_t *dsp, bool read,
+                                         NvU064 address, void *appdata, NvU032 count)
+{
+    PCIE_payload_t payload;
+    PCIEConnection *connection = static_cast<PCIEConnection *>(dsp->pci_object);
+
+    payload.dev_access.dfid    = dsp->access_gfid;
+    payload.dev_access.address = (uint64_t)address;
+    payload.dev_access.count   = (uint32_t)count;
+    payload.dev_access.pcie_op = (read) ? pcie_op_read : pcie_op_write;
+
+    if (read) {
+        LOG(PCIE, INFO, "SYSMEM_READ START: 0x%lx/%d",
+            payload.dev_access.address, payload.dev_access.count);
+        if (connection->PCIESysmemRead(&payload)) {
+            LOG(PCIE, ERROR, "PCIESysmemRead call failed with following return value");
+            return BUSMEM_NOTHANDLED;
+        }
+        std::memcpy(appdata, (void *)payload.dev_access.data, count);
+        LOG(PCIE, INFO, "SYSMEM_READ DONE: 0x%lx/%d: 0x%lx",
+            payload.dev_access.address, payload.dev_access.count,
+            *(uint64_t *)&payload.dev_access.data);
+    } else {
+        LOG(PCIE, INFO, "SYSMEM_WRITE START: 0x%lx/%d",
+            payload.dev_access.address, payload.dev_access.count);
+        std::memcpy((void *)payload.dev_access.data, appdata, count);
+        if (connection->PCIESysmemWrite(&payload)) {
+            LOG(PCIE, ERROR, "PCIESysmemWrite call failed with following return value");
+            return BUSMEM_NOTHANDLED;
+        }
+        LOG(PCIE, INFO, "SYSMEM_WRITE DONE: 0x%lx/%d: 0x%lx",
+            payload.dev_access.address, payload.dev_access.count,
+            *(uint64_t *)&payload.dev_access.data);
+    }
+
+    return BUSMEM_HANDLED;
+}
+```
+
+**File:** [`gitlab://commlib/src/commlib.cpp#L537`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib.cpp?ref_type=heads#L537)
+
+```cpp
+commLib_error_t PCIEConnection::PCIESysmemRead (PCIE_payload_t *payload);
+commLib_error_t PCIEConnection::PCIESysmemWrite(PCIE_payload_t *payload);
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L20`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L20)
+
+```cpp
+commLib_error_t ProcessSysmemRead(PCIE_payload_t *payload)
+{
+    uint8_t data_buf[4096] = {0};
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->dev_access.vmm_pcie_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " address is 0x" << payload->dev_access.address
+        << " size is " << payload->dev_access.count);
+
+    if (payload->dev_access.count > sizeof(data_buf)) {
+        std::cout << "[ERROR] payload size too big " << payload->dev_access.count << std::endl;
+        return commLib_failure;
+    }
+
+    if (!gpu_sysmem_read_callback) {
+        std::cout << "[ERROR] gpu_sysmem_read_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    gpu_sysmem_read_callback(commlib_instance, payload->dev_access.address,
+                             payload->dev_access.count, data_buf);
+    memcpy((uint8_t *)payload->dev_access.data,
+           (const uint8_t *)data_buf, payload->dev_access.count);
+
+    return commLib_success;
+}
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L45`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L45)
+
+```cpp
+commLib_error_t ProcessSysmemWrite(PCIE_payload_t *payload)
+{
+    uint8_t data_buf[4096] = {0};
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->dev_access.vmm_pcie_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " address is 0x" << payload->dev_access.address
+        << " size is " << payload->dev_access.count);
+
+    if (payload->dev_access.count > sizeof(data_buf)) {
+        std::cout << "[ERROR] payload size too big " << payload->dev_access.count << std::endl;
+        return commLib_failure;
+    }
+
+    if (!gpu_sysmem_write_callback) {
+        std::cout << "[ERROR] gpu_sysmem_write_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    memcpy((uint8_t *)data_buf,
+           (const uint8_t *)payload->dev_access.data, payload->dev_access.count);
+    gpu_sysmem_write_callback(commlib_instance, payload->dev_access.address,
+                              payload->dev_access.count, data_buf);
+
+    return commLib_success;
+}
+```
+
+### PCIe legacy IRQ notify
+
+**File:** [`gitlab://devproc/devproc.cpp#L927`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/devproc.cpp?ref_type=heads#L927)
+
+```cpp
+void Chipset::HandleSpecificInterrupt(NvU032 id)
+{
+    PCIE_payload_t payload;
+    PCIEConnection *connection = static_cast<PCIEConnection *>(dsp->pci_object);
+
+    payload.interrupt.dfid         = dsp->access_gfid;
+    payload.interrupt.interrupt_id = id;
+
+    if (connection->PCIEAssertInterrupt(&payload)) {
+        LOG(PCIE, ERROR, "PCIEAssertInterrupt call failed");
+        return;
+    }
+}
+
+void Chipset::DeassertSpecificInterrupt(NvU032 id)
+{
+    PCIE_payload_t payload;
+    PCIEConnection *connection = static_cast<PCIEConnection *>(dsp->pci_object);
+
+    payload.interrupt.dfid         = dsp->access_gfid;
+    payload.interrupt.interrupt_id = id;
+
+    if (connection->PCIEDeassertInterrupt(&payload)) {
+        LOG(PCIE, ERROR, "PCIEDeassertInterrupt call failed");
+        return;
+    }
+}
+```
+
+**File:** [`gitlab://commlib/src/commlib.cpp#L579`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib.cpp?ref_type=heads#L579)
+
+```cpp
+commLib_error_t PCIEConnection::PCIEAssertInterrupt  (PCIE_payload_t *payload);
+commLib_error_t PCIEConnection::PCIEDeassertInterrupt(PCIE_payload_t *payload);
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L70`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L70)
+
+```cpp
+commLib_error_t ProcessAssertInterrupt(PCIE_payload_t *payload)
+{
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->interrupt.vmm_pcie_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " GPU interrupt_id is " << payload->interrupt.interrupt_id);
+
+    if (payload->interrupt.interrupt_id >= sizeof(uint32_t) * 8) {
+        std::cout << "[ERROR] invalid gpu irq id" << std::endl;
+        return commLib_failure;
+    }
+
+    if (!gpu_irq_assert_callback) {
+        std::cout << "[ERROR] gpu_irq_assert_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    g_gpu_pending_irq_mask[commlib_instance] |= (0x1 << payload->interrupt.interrupt_id);
+
+    // Notify CPU there is a GPU IRQ assert if any IRQ is pending
+    if (g_gpu_pending_irq_mask[commlib_instance]) {
+        gpu_irq_assert_callback(commlib_instance);
+    }
+
+    return commLib_success;
+}
+
+commLib_error_t ProcessDeassertInterrupt(PCIE_payload_t *payload)
+{
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->interrupt.vmm_pcie_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " GPU interrupt_id is " << payload->interrupt.interrupt_id);
+
+    if (payload->interrupt.interrupt_id >= sizeof(uint32_t) * 8) {
+        std::cout << "[ERROR] invalid gpu irq id" << std::endl;
+        return commLib_failure;
+    }
+
+    if (!gpu_irq_deassert_callback) {
+        std::cout << "[ERROR] gpu_irq_deassert_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    g_gpu_pending_irq_mask[commlib_instance] &= ~(0x1 << payload->interrupt.interrupt_id);
+
+    // Notify CPU to deassert GPU IRQ if no IRQ is pending
+    if (g_gpu_pending_irq_mask[commlib_instance] == 0) {
+        gpu_irq_deassert_callback(commlib_instance);
+    }
+
+    return commLib_success;
+}
+```
+
+---
+
+# C2C transaction (Vera → remote CommLib GPU)
+
+## a. SoC → gpu_wrapper binding
+
+**File:** `$NET15/ip/socd/nv_top/4.0/cmod/nv_top/scsim/nv_top_full.cpp`
+
+```cpp
+compute_die->compute2remote_c2c_grs_init_socket[i].bind(sc_gpu_commlib_wrapper_c2->gpu_c2c_targ_socket);
+sc_gpu_commlib_wrapper_c2->gpu_c2c_init_socket.bind(compute_die->gpu2memory_mcf_dbb_initiator_socket[i]);
+```
+
+## b. gpu_wrapper → commlib_chi_transactor binding
+
+**File:** `$NET15/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/gpu_commlib_wrapper.cpp`
+
+```cpp
+if (sc_commlib_chi_transactor != NULL) {
+    sc_commlib_chi_transactor->init_socket.bind(this->gpu_c2c_init_socket);
+    this->gpu_c2c_targ_socket.bind(sc_commlib_chi_transactor->targ_socket);
+}
+```
+
+## c. commlib_chi_transactor → external commlib_adapter binding
+
+**File:** `$NET15/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.cpp`
+
+### SoC → GPU transaction
+
+```cpp
+targ_socket.register_b_transport(this, &commlib_chi_transactor::b_transport);
+
+void commlib_chi_transactor::b_transport(int id, tlm::tlm_generic_payload& trans, sc_time& delay) {
+    cslDebug((55, "commlib_chi_transactor::b_transport() called \n"));
+    reqType req_type = decode_soc_reqType(trans);
+    if (req_type == e_readRequest) {
+        cslDebug((55, "commlib_chi_transactor received read request from CPU \n"));
+        process_read_request_to_gpu(trans);
+    } else if (req_type == e_writeRequest) {
+        cslDebug((55, "commlib_chi_transactor received write request from CPU \n"));
+        process_write_request_to_gpu(trans);
+    } else if (req_type == e_atsRequest) {
+        cslDebug((55, "commlib_chi_transactor received ATSD request from MC \n"));
+        send_atsd_gchi_packet(id, trans);
+        trans.set_response_status(tlm::TLM_OK_RESPONSE);
+        // TODO: check atsd response and then complete b_transport
+    } else if (req_type == e_snoopRequest) {
+        cslDebug((55, "commlib_chi_transactor received SNOOP request from MC \n"));
+    }
+}
+
+void commlib_chi_transactor::set_soc_to_gpu_path() {
+    cslDebug((55, "commlib_chi_transactor::set_soc_to_gpu_path() called \n"));
+
+    // function pointer to send responses to GPU
+    send_resp2gpu_ptr = (soc2igpu_resp)dlsym((void *)commlib_adapter_handle, "send_soc2igpu_resp_packet");
+    if (!send_resp2gpu_ptr) cslAssertMsg((false), ("send_resp2gpu_ptr is NULL \n"));
+
+    // function pointer to send data to GPU
+    send_data2gpu_ptr = (soc2igpu_data)dlsym((void *)commlib_adapter_handle, "send_soc2igpu_data_packet");
+    if (!send_data2gpu_ptr) cslAssertMsg((false), ("send_data2gpu_ptr is NULL \n"));
+
+    // function pointer to send request to GPU
+    send_req2gpu_ptr = (soc2igpu_req)dlsym((void *)commlib_adapter_handle, "send_soc2igpu_req_packet");
+    if (!send_req2gpu_ptr) cslAssertMsg((false), ("send_req2gpu_ptr is NULL \n"));
+}
+```
+
+### GPU → SoC transactions
+
+```cpp
+void commlib_chi_transactor::send_b_transport(tlm::tlm_generic_payload* gp) {
+    sc_time delay = SC_ZERO_TIME;
+    init_socket->b_transport(*gp, delay);
+    if (gp->is_response_error()) {
+        SC_REPORT_ERROR("commlib_chi_transactor::send_b_transport",
+                        gp->get_response_string().c_str());
+    }
+}
+
+void commlib_chi_transactor::get_gpu_registration_functions() {
+    // function pointer to register soc request function
+    register_req2soc_ptr = (reg_igpu2soc_req)dlsym(
+        (void *)commlib_adapter_handle, "register_gpu2soc_memory_callback");
+    if (!register_req2soc_ptr) cslAssertMsg((false), ("register_req2soc_ptr is NULL \n"));
+}
+
+void commlib_chi_transactor::set_gpu_registration_functions() {
+    // register callback for GPU to SOC memory request
+    register_req2soc_ptr(commlib_gpu2soc_memory_request,
+                         commlib_gpu2soc_memory_data,
+                         commlib_gpu2soc_memory_response);
+}
+```
+
+## d. External commlib_adapter → remote GPU
+
+### SoC → GPU request / data / response APIs
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L314`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L314)
+
+```cpp
+void commslib_c2c_adapter::c2c_soc_to_gpu_req(int link, void *data_payload, uint32_t payload_size)
+{
+    DEBUG("commlib_instance_num = " << commlib_info.instance_num << " addr = 0x" << std::hex << addr);
+
+    C2C_payload_t payload;
+    payload.c2c_req.link         = link;
+    payload.c2c_req.payload_size = payload_size;
+    payload.c2c_req.direction    = To_GPU;
+
+    memcpy(payload.c2c_req.data, data_payload, payload_size);
+    DEBUG("payload size = 0x" << std::hex << payload_size);
+    c2c_conn->C2CSoCToGPURequest(&payload);
+}
+```
+
+**commlib API:** [`gitlab://commlib MR!19 — C2CSoCToGPURequest`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/merge_requests/19/diffs?commit_id=6024e0b84309f1c76de6c19e68f5cc6205457efa#aa5144be6df7a4bfbeea1bdc7dd89b497218ecbc_557_613)
+
+```cpp
+commLib_error_t C2CConnection::C2CSoCToGPURequest(C2C_payload_t *payload);
+```
+
+**Remote devproc GPU API:** [`gitlab://devproc MR!22 — send_soc2igpu_req_packet`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/22/diffs?commit_id=cc95bdb515b9e1a3a5b8d323d10b8d55a88259ab#0eb4d0916ab2915148f608370946b431d321ada3_1582_1634)
+
+```cpp
+send_req2gpu_ptr = (soc2igpu_req)dlsym(chiplibModule, "send_soc2igpu_req_packet");
+```
+
+---
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L328`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L328)
+
+```cpp
+void commslib_c2c_adapter::c2c_soc_to_gpu_data(int link, void *data_payload, uint32_t payload_size)
+{
+    DEBUG("commlib_instance_num = " << commlib_info.instance_num << " addr = 0x" << std::hex << addr);
+
+    C2C_payload_t payload;
+    payload.c2c_data.link         = link;
+    payload.c2c_data.payload_size = payload_size;
+    payload.c2c_data.direction    = To_GPU;
+
+    memcpy(payload.c2c_data.data, data_payload, payload_size);
+    DEBUG("payload size = 0x" << std::hex << payload_size);
+    c2c_conn->C2CSoCToGPUData(&payload);
+}
+```
+
+**commlib API:** [`gitlab://commlib MR!19 — C2CSoCToGPUData`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/merge_requests/19/diffs?commit_id=6024e0b84309f1c76de6c19e68f5cc6205457efa#aa5144be6df7a4bfbeea1bdc7dd89b497218ecbc_557_634)
+
+```cpp
+commLib_error_t C2CConnection::C2CSoCToGPUData(C2C_payload_t *payload);
+```
+
+**Remote devproc GPU API:** [`gitlab://devproc MR!22 — registerMemRequestFn`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/22/diffs?commit_id=cc95bdb515b9e1a3a5b8d323d10b8d55a88259ab#0eb4d0916ab2915148f608370946b431d321ada3_1582_1641)
+
+```cpp
+register_req2soc_ptr = (reg_igpu2soc_req)dlsym(chiplibModule, "registerMemRequestFn");
+```
+
+---
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L342`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L342)
+
+```cpp
+void commslib_c2c_adapter::c2c_soc_to_gpu_resp(int link, void *data_payload, uint32_t payload_size)
+{
+    DEBUG("commlib_instance_num = " << commlib_info.instance_num << " addr = 0x" << std::hex << addr);
+
+    C2C_payload_t payload;
+    payload.c2c_resp.link         = link;
+    payload.c2c_resp.payload_size = payload_size;
+    payload.c2c_resp.direction    = To_GPU;
+
+    memcpy(payload.c2c_resp.data, data_payload, payload_size);
+    DEBUG("payload size = 0x" << std::hex << payload_size);
+    c2c_conn->C2CSoCToGPUResponse(&payload);
+}
+```
+
+**commlib API:** [`gitlab://commlib MR!19 — C2CSoCToGPUResponse`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/merge_requests/19/diffs?commit_id=6024e0b84309f1c76de6c19e68f5cc6205457efa#aa5144be6df7a4bfbeea1bdc7dd89b497218ecbc_557_634)
+
+```cpp
+commLib_error_t C2CConnection::C2CSoCToGPUResponse(C2C_payload_t *payload);
+```
+
+**Remote devproc GPU API:** [`gitlab://devproc MR!22 — send_soc2igpu_resp_packet`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/22/diffs?commit_id=cc95bdb515b9e1a3a5b8d323d10b8d55a88259ab#0eb4d0916ab2915148f608370946b431d321ada3_1582_1620)
+
+```cpp
+send_resp2gpu_ptr = (soc2igpu_resp)dlsym(chiplibModule, "send_soc2igpu_resp_packet");
+```
+
+### GPU → SoC request / data / response APIs
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L342`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L342)
+
+```cpp
+commslib_c2c_adapter::commslib_c2c_adapter(const char *client, const char *comp,
+                                           const uint32_t instance_num)
+    : myClient{client}, comp1{comp}
+{
+    DEBUG("constructing commslib_c2c_adapter");
+
+    // Initialize the commlib dev info
+    commlib_info.instance_num = instance_num;
+
+    // Establish callbacks if any
+    C2C_callbacks_t callbacks;
+    callbacks.process_c2c_soc_to_gpu_req  = NULL;
+    callbacks.process_c2c_soc_to_gpu_data = NULL;
+    callbacks.process_c2c_soc_to_gpu_resp = NULL;
+    callbacks.process_c2c_gpu_to_soc_req  = ProcessGpuToSoCReq;
+    callbacks.process_c2c_gpu_to_soc_data = ProcessGpuToSoCData;
+    callbacks.process_c2c_gpu_to_soc_resp = ProcessGpuToSoCResp;
+    callbacks.vmm_c2c_dev                 = (const void *)&commlib_info;
+
+    // Establish connection
+    c2c_conn = new C2CConnection(myClient, comp1);
+    c2c_conn->RegisterC2CCallbacks(callbacks);
+
+    DEBUG("constructing commslib_c2c_adapter done, commlib_info.instance_num = "
+        << commlib_info.instance_num
+        << " comp1.component_identifier = " << comp1.component_identifier);
+}
+```
+
+**Remote devproc GPU API:** [`gitlab://devproc MR!22 — registerMemRequestFn`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/22/diffs?commit_id=cc95bdb515b9e1a3a5b8d323d10b8d55a88259ab#0eb4d0916ab2915148f608370946b431d321ada3_1582_1641)
+
+```cpp
+register_req2soc_ptr = (reg_igpu2soc_req)dlsym(chiplibModule, "registerMemRequestFn");
+```
+
+**commlib API:** [`gitlab://commlib MR!19 — C2CGPUToSoCRequest`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/merge_requests/19/diffs?commit_id=6024e0b84309f1c76de6c19e68f5cc6205457efa#aa5144be6df7a4bfbeea1bdc7dd89b497218ecbc_557_676)
+
+```cpp
+commLib_error_t C2CConnection::C2CGPUToSoCRequest(C2C_payload_t *payload);
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L128`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L128)
+
+```cpp
+commLib_error_t ProcessGpuToSoCReq(C2C_payload_t *payload)
+{
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->c2c_req.vmm_c2c_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " size is " << payload->c2c_req.payload_size);
+
+    if (!gpu2soc_memory_request_callback) {
+        std::cout << "[ERROR] gpu2soc_memory_request_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    gpu2soc_memory_request_callback(commlib_instance,
+                                    (int)payload->c2c_req.link,
+                                    (void *)payload->c2c_req.data,
+                                    payload->c2c_req.payload_size);
+
+    return commLib_success;
+}
+```
+
+---
+
+**Remote devproc GPU API:** [`gitlab://devproc MR!22 — registerMemReqDataFn`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/22/diffs?commit_id=cc95bdb515b9e1a3a5b8d323d10b8d55a88259ab#0eb4d0916ab2915148f608370946b431d321ada3_1582_1652)
+
+```cpp
+register_data2soc_ptr = (reg_igpu2soc_data)dlsym(chiplibModule, "registerMemReqDataFn");
+```
+
+**commlib API:** [`gitlab://commlib MR!19 — C2CGPUToSoCData`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/merge_requests/19/diffs?commit_id=6024e0b84309f1c76de6c19e68f5cc6205457efa#aa5144be6df7a4bfbeea1bdc7dd89b497218ecbc_557_697)
+
+```cpp
+commLib_error_t C2CConnection::C2CGPUToSoCData(C2C_payload_t *payload);
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L146`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L146)
+
+```cpp
+commLib_error_t ProcessGpuToSoCData(C2C_payload_t *payload)
+{
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->c2c_data.vmm_c2c_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " size is " << payload->c2c_data.payload_size);
+
+    if (!gpu2soc_memory_data_callback) {
+        std::cout << "[ERROR] gpu2soc_memory_data_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    gpu2soc_memory_data_callback(commlib_instance,
+                                 (int)payload->c2c_data.link,
+                                 (void *)payload->c2c_data.data,
+                                 payload->c2c_data.payload_size);
+
+    return commLib_success;
+}
+```
+
+---
+
+**Remote devproc GPU API:** [`gitlab://devproc MR!22 — registerMemRespFn`](https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/22/diffs?commit_id=cc95bdb515b9e1a3a5b8d323d10b8d55a88259ab#0eb4d0916ab2915148f608370946b431d321ada3_1582_1663)
+
+```cpp
+register_resp2soc_ptr = (reg_igpu2soc_resp)dlsym(chiplibModule, "registerMemRespFn");
+```
+
+**commlib API:** [`gitlab://commlib MR!19 — C2CGPUToSoCResponse`](https://gitlab-master.nvidia.com/systemsim/next/commlib/-/merge_requests/19/diffs?commit_id=6024e0b84309f1c76de6c19e68f5cc6205457efa#aa5144be6df7a4bfbeea1bdc7dd89b497218ecbc_557_718)
+
+```cpp
+commLib_error_t C2CConnection::C2CGPUToSoCResponse(C2C_payload_t *payload);
+```
+
+**File:** [`gitlab://commlib_adapter/commlib_adapter.cpp#L164`](https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp?ref_type=heads#L164)
+
+```cpp
+commLib_error_t ProcessGpuToSoCResp(C2C_payload_t *payload)
+{
+    struct commlib_dev_info *commlib_info =
+        (struct commlib_dev_info *)payload->c2c_resp.vmm_c2c_dev;
+    uint32_t commlib_instance = commlib_info->instance_num;
+
+    DEBUG("commlib instance is " << commlib_instance
+        << " size is " << payload->c2c_resp.payload_size);
+
+    if (!gpu2soc_memory_response_callback) {
+        std::cout << "[ERROR] gpu2soc_memory_response_callback is NULL" << std::endl;
+        return commLib_failure;
+    }
+
+    gpu2soc_memory_response_callback(commlib_instance,
+                                     (int)payload->c2c_resp.link,
+                                     (void *)payload->c2c_resp.data,
+                                     payload->c2c_resp.payload_size);
+
+    return commLib_success;
+}
+```
