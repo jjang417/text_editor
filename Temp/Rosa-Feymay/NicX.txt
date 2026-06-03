@@ -1,0 +1,42 @@
+
+
+
+  Cross-connect with the remote CPU (TB600) VM with commlib connection:
+
+   Interface   commlib_adapter (CPU/VM end)            DevProc (clean endpoint server)        NicX (libnicx_qemu.so)
+   ─────────   ───────────────────────────             ──────────────────────────────        ──────────────────────
+   config      pcie_config_read/write     ──commlib──► ProcessConfigRead/Write  (.cpp:145/156) ──► mlx5_pci_config_access
+   MMIO        pcie_mmio_read/write        ──commlib──► ProcessMMIORead/Write    (.cpp:167/185) ──► mlx5_mmio_bar_access
+   DMA         ProcessSysmemRead/Write     ◄─commlib─── mlx5_wrap_sys_mem_*      (.cpp:78/83)   ◄── Mlx5WrapSysMemRead/Write
+   IRQ         ProcessAssert/Deassert      ◄─commlib─── (no IRQ code in DevProc now)            ◄── (mlx5_pci_generic — UNWIRED)
+                                         Could refer to GPU DevProc devproc.cpp#L937
+
+
+  ┌────────────┬──────────────────────────────────────────┬──────────────────────┬─────────────┬──────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Interface  │               Symbol(s)                  │       Location       │  Direction  │                                        Mechanism                                         │
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Device     │ mlx5_init(context, device_id, class_id,  │ QemuNicx.h:8         │ DevProc →   │ exported symbol; DevProc dlsym's it (DevProc.cpp:284) & calls once (DevProc.cpp:310),    │
+  │ init       │  rev, devfn, flags, ffod_key, dwqe_ptr)  │ (impl .cpp:727)      │ device      │ returns opaque "key" stored in dsp->mlx5_key, passed to every later call                 │
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ PCIe       │ mlx5_pci_config_access(key, access_mode, │ QemuNicx.h:15        │ CPU →       │ exported; dlsym'd (DevProc.cpp:283); from ProcessConfigRead/Write (.cpp:149/161),        │
+  │ config     │  addr, val, len)                         │ (impl .cpp:781)      │ device      │ access_mode 0=rd/1=wr, len 1/2/4 → PciCfgRead/Write → NicxPciCfgReadDw/WriteDw (.cpp:485/552)│
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ PCIe MMIO  │ mlx5_mmio_bar_access(key, access_mode,   │ QemuNicx.h:12        │ CPU →       │ exported; dlsym'd (DevProc.cpp:282); from ProcessMMIORead/Write (.cpp:171/190); FULL addr│
+  │            │  addr, size, *val)                       │ (impl .cpp:821)      │ device      │ → GetBarOffsetFromFullAddress (.cpp:607) → NicxBarRead/Write32/64 (.cpp:619/690); size 1/2/4/8│
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ DMA        │ Mlx5WrapSysMemRead/Write(gvmi, addr,     │ QemuNicx.h:23-24     │ device →    │ NicX calls OUT via DI table mlx_api_qemu_impl->mlx5_sys_mem_read/write (.cpp:909/920);    │
+  │ (sysmem)   │  buf, len)                               │ (impl .cpp:912/898)  │ CPU RAM     │ table IMPORTED via MLX_DI_IFC_IMPORT (.cpp:864), PROVIDED by DevProc (DevProc.cpp:111-116)│
+  │            │                                          │                      │             │ → mlx5_wrap_sys_mem_read/write (.cpp:78/83) → PCIESysmemRead/Write (.cpp:60/66)           │
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ IRQ        │ Mlx5WrapPciGeneric / mlx5_dwqe_msix      │ QemuNicx.h:21        │ device →    │ would emit via mlx_api_qemu_impl->mlx5_pci_generic (.cpp:923) with MLX5_DWQE_TYPE_MSIX.  │
+  │ (MSIX)     │ (MLX5_DWQE_TYPE_MSIX)                    │ (impl .cpp:923,60,51)│ CPU         │ ⚠ NOT WIRED: NicX never fires it; this DevProc sets NO mlx5_pci_generic in the DI table. │
+  │            │                                          │                      │             │ To implement, model on GPU DevProc's IRQ forwarding:                                     │
+  │            │                                          │                      │             │ https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/main/devproc.cpp#L937     │
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Reset      │ mlx5_device_reset(key)                   │ QemuNicx.h:17        │ DevProc →   │ exported symbol → NicxReset + ResetNicxDeviceInstances (.cpp:854-855)                    │
+  │            │                                          │ (impl .cpp:852)      │ device      │ ⚠ NOTE: this DevProc does NOT dlsym mlx5_device_reset (only init/cfg/mmio)               │
+  ├────────────┼──────────────────────────────────────────┼──────────────────────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Config     │ mlx_api_lib_config (set_resource_base /  │ QemuNicx.cpp:887-892 │ DevProc →   │ NicX EXPORTS via MLX_DI_IFC_EXPORT; DevProc IMPORTS (DevProc.cpp:117) & calls            │
+  │ path       │  get_resource_path)                      │                      │ device      │ set_resource_base() after mlx_di_load (DevProc.cpp:280)                                  │
+  └────────────┴──────────────────────────────────────────┴──────────────────────┴─────────────┴──────────────────────────────────────────────────────────────────────────────────────────┘
+
