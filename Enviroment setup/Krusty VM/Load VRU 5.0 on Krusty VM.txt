@@ -32,7 +32,7 @@ https://nvidia.atlassian.net/wiki/spaces/DPS/pages/3283038192/Release+Notes+-+VR
 cat > ~/.netrc << 'EOF'
 machine artifactory.nvidia.com
 login jjang
-password cmVmdGtuOjAxOjE4MDgzNzc5Nzk6NnVvcUJ1SWVOaUtsMGFmbXNheWlBUENueE02
+password cmVmdGtuOjAxOjE4MTM2MzA1Mzg6c3BkMVI3bWhCUEhqck9zaDJzSE9uRHNubW5v
 EOF
 
 # Set permissions (required!)

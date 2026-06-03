@@ -1179,6 +1179,11 @@ set iommu.passthrough=1
 
  
 
-/home/nvidia/channel --gtest_filter=*CeVirtual* -d 0x900ddeed --verbose 
+/home/nvidia/channel --gtest_filter=*CeVirtual* -d 0x900ddeed --verbose
 
- 
+
+
+Results:
+1) Test pass (back-to-back)
+2) Test pass (back-to-back)
+3) Test fail (GPU fmod abort due to iommu disabled and frontdoor_soc_path=0)
