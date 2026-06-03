@@ -268,6 +268,9 @@ for native GPU:
 sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'
 sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
 
+Try to disable escape call to Native GPU:
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
 
 for commlib GPU:
 root@pset$ dmesg | grep iommu
@@ -366,3 +369,26 @@ root@ubuntu-L1:/home/nvidia# busybox devmem 0x200000000000 32
 
 
 -sriov_BDFShiftSizeInSysmemAddr=56 -disable_ats_backdoor -fsf_mode -fslib_mode_disable -mmu_frontdoor_iodie -fc_ltc_slice_run_loop -mux_sel_from_sys_ctrl -drop_pmgr_pri_accesses -pce_connected_to_cehub -simtxt max_nvclk=0 -nvlink_datapath_to_nvlc -floorsweep=nvlc_perlink_enable:0:0x5:c2c_disable:0x3:syspipe_enable:0x01:display_disable:1:pmu_enable:0x1:oobhub_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1:gpc_enable:0x1:gpc_tpc_enable:0:0x1:gpc_cpc_enable:0:0x1:fbp_enable:0x1:fbio_enable:0xf -noinstance_nvenc -noinstance_nvdec -smAllowUninitializedRegister sim-terminate-timeout=0 -use_gen6 -fmod_hiearchy_provides_die_id -gpu_instance=0 -xalep2fb_en -temp_enable_fbhub_node_ids -upstream_path_gen6 -c2c_disable -nvlpw_rlw_csl_assertions_instead_of_errors -chipPOR=gr102 -frontdoor_soc_path=1 -smTrapStateChangeCheckInterval=10000 -event_cover=1 -c2c0=CPU -c2c1=CPU -c2c2=CPU -c2c3=CPU -c2c4=CPU -c2c5=CPU -c2c6=CPU -c2c7=CPU -c2c8=CPU -c2c9=CPU -c2c10=CPU -c2c11=CPU -c2c12=CPU -c2c13=CPU -send_atr_over_xbar -use_linsim_memstore -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -linsim_memstore_lib -linsim_client_name kepler_fmodel -linsim_store_name /proc/36/fd/3
+
+
+
+[C2C call trace]
+
+(gdb) bt
+#0  0x00007f0fd4853070 in scsim::cmod::commlib_chi_transactor::process_write_request_to_gpu(tlm::tlm_generic_payload&)@plt ()
+   from target:/sim/release_pkg_net15_vdk_c1g2/c1g2/sim.tb500/VDK_TB500_FC_NET15_VDK_X/nvidia_lib/gcc-13.3.0-64/libtb500_gpu_wrapper_fsim.so
+#1  0x00007f0cefbd339c in ScfImpl::RouteTransaction(int, tlm::tlm_generic_payload&, sc_core::sc_time*, unsigned int*, tlm::tlm_dmi*, bool*) ()
+   from target:/sim/release_pkg_net15_vdk_c1g2/c1g2/sim.tb500/VDK_TB500_FC_NET15_VDK_X/nvidia_lib/gcc-13.3.0-64/libtb500_ccplex_wrapper_fsim.so
+#2  0x00007f0cefbd5b43 in ScfImpl::CpuInBTransport(int, tlm::tlm_generic_payload&, sc_core::sc_time&) ()
+   from target:/sim/release_pkg_net15_vdk_c1g2/c1g2/sim.tb500/VDK_TB500_FC_NET15_VDK_X/nvidia_lib/gcc-13.3.0-64/libtb500_ccplex_wrapper_fsim.so
+#3  0x00007f0cefbaf6a4 in scsim::cmod::CcplexMemBridge::b_transport(int, tlm::tlm_generic_payload&, sc_core::sc_time&) ()
+   from target:/sim/release_pkg_net15_vdk_c1g2/c1g2/sim.tb500/VDK_TB500_FC_NET15_VDK_X/nvidia_lib/gcc-13.3.0-64/libtb500_ccplex_wrapper_fsim.so
+#4  0x00007f0fb6f67de2 in amba_pv::amba_pv_to_tlm_bridge<64u>::b_transport(int, tlm::tlm_generic_payload&, sc_core::sc_time&) ()
+   from target:/sim/release_pkg_net15_vdk_c1g2/c1g2/sim.tb500/VDK_TB500_FC_NET15_VDK_X/nvidia_lib/gcc-13.3.0-64/libcortex_r5.so
+#5  0x00007f0fb3ff6742 in sg::ConcreteConnectorBase3<int, tlm::tlm_generic_payload&, sc_core::sc_time&, void>::operator() (this=0x7a429338, p1=0, p2=..., p3=...)
+    at /home/tools/arm/FastModels/r11p29-27rel0/FastModelsPortfolio_11.29/include/fmruntime/sg/ConcreteConnectorBase.h:1761
+#6  0x00007f0fb3fa4727 in arm_aemv9_x1_NMS::Component__PVBus2AMBAPV::send_tlm_transaction (this=0x7a421f20, tx=0x7f08be093a30, command=tlm::TLM_WRITE_COMMAND, 
+    transCache=0x8e357df0) at /home/tools/arm/FastModels/r11p29-27rel0/FastModelsPortfolio_11.29/examples/SystemCExport/Bridges/PVBus2AMBAPV.lisa:848
+
+....
+

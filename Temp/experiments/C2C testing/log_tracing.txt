@@ -1,0 +1,118 @@
+
+[Debug log]
+void commlib_chi_transactor::process_write_request_to_gpu(tlm::tlm_generic_payload& trans) {
+	cslDebug((55, "process_write_request_to_gpu() called \n"));
+	uint64_t address = trans.get_address();
+    uint32_t size_in_bytes = trans.get_data_length();
+	uint8_t* data_ptr = trans.get_data_ptr();
+    bool is_partial_data = false;
+	int link = 0;
+	uint32_t requested_data_beats = 0;
+    uint32_t remaining_unaligned_bytes = size_in_bytes%32;
+	wr_txn_id = get_txnid();
+	wr_comp_resp_dbid = 0;
+
+#if 1
+      uint8_t* be_ptr = trans.get_byte_enable_ptr();
+      uint32_t be_len = trans.get_byte_enable_length();
+      uint8_t* dp     = trans.get_data_ptr();
+      uint32_t dl     = trans.get_data_length();
+
+      cslInfo(("PWR_GPU IN  [%s] addr=0x%lx len=%u cmd=%d sw=%u be_len=%u be_ptr=%p data_ptr=%p\n",
+               sc_core::sc_time_stamp().to_string().c_str(),
+               (unsigned long)trans.get_address(),
+               dl,
+               (int)trans.get_command(),
+               trans.get_streaming_width(),
+               be_len, (void*)be_ptr, (void*)dp));
+
+      // dump up to 32 data bytes
+      {
+          uint32_t n = (dl < 32) ? dl : 32;
+          char buf[3*32+1] = {0};
+          for (uint32_t i = 0; i < n; ++i) snprintf(buf + i*3, 4, "%02x ", dp[i]);
+            cslInfo(("  data[0..%u]: %s\n", n, buf));
+      }
+
+      // dump byte-enable bytes if any
+      if (be_ptr && be_len) {
+          uint32_t n = (be_len < 32) ? be_len : 32;
+          char buf[3*32+1] = {0};
+          for (uint32_t i = 0; i < n; ++i) snprintf(buf + i*3, 4, "%02x ", be_ptr[i]);
+          cslInfo(("  be  [0..%u]: %s\n", n, buf));
+      }
+#endif
+    cslDebug((55,"sending write to address 0x%llx for bytes %d\n",address,size_in_bytes));
+
+
+root@pset$ busybox devmem 0x200000000001 8 0xaa
+root@pset$ busybox devmem 0x200000000002 8 0xaa
+root@pset$ busybox devmem 0x200000000003 8 0xaa
+root@pset$ busybox devmem 0x200000000004 8 0xaa
+root@pset$ busybox devmem 0x200000000005 8 0xaa
+root@pset$ busybox devmem 0x200000000006 8 0xaa
+root@pset$ busybox devmem 0x200000000007 8 0xaa
+root@pset$ busybox devmem 0x200000000008 8 0xaa
+root@pset$ busybox devmem 0x200000000009 8 0xaa
+
+
+
+Info: [ nvclk=82834 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [82649080001 ps] addr=0x200000000000 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x194eb08f0 data_ptr=0x17fa1ab30
+Info: [ nvclk=82834 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 aa 00 00 
+Info: [ nvclk=82834 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 ff 00 00 
+Debug(55): [ nvclk=82834 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000000 for bytes 4
+Debug(55): [ nvclk=82834 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+
+Debug(55): [ nvclk=83604 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=83604 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [83418435878 ps] addr=0x200000000000 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x16b0074e0 data_ptr=0x169a7c4c0
+Info: [ nvclk=83604 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 00 aa 00 
+Info: [ nvclk=83604 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 00 ff 00 
+Debug(55): [ nvclk=83604 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000000 for bytes 4
+Debug(55): [ nvclk=83604 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+
+Debug(55): [ nvclk=84496 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=84496 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [84310660009 ps] addr=0x200000000000 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x17acde0f0 data_ptr=0x17a81c300
+Info: [ nvclk=84496 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 00 00 aa 
+Info: [ nvclk=84496 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 00 00 ff 
+Debug(55): [ nvclk=84496 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000000 for bytes 4
+Debug(55): [ nvclk=84496 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+
+Debug(55): [ nvclk=85523 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=85523 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [85337670975 ps] addr=0x200000000004 len=4 cmd=1 sw=1 be_len=4 be_ptr=0xf7a066e0 data_ptr=0x17b12e890
+Info: [ nvclk=85523 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: aa 00 00 00 
+Info: [ nvclk=85523 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: ff 00 00 00 
+Debug(55): [ nvclk=85523 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000004 for bytes 4
+Debug(55): [ nvclk=85523 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+
+Debug(55): [ nvclk=86655 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=86655 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [86469985551 ps] addr=0x200000000004 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x1666a7070 data_ptr=0x180bd5b90
+Info: [ nvclk=86655 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 aa 00 00 
+Info: [ nvclk=86655 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 ff 00 00 
+Debug(55): [ nvclk=86655 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000004 for bytes 4
+Debug(55): [ nvclk=86655 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+
+Debug(55): [ nvclk=87984 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=87984 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [87798514955 ps] addr=0x200000000004 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x179e21fb0 data_ptr=0x188af5ec0
+Info: [ nvclk=87984 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 00 aa 00 
+Info: [ nvclk=87984 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 00 ff 00 
+Debug(55): [ nvclk=87984 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000004 for bytes 4
+Debug(55): [ nvclk=87984 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+
+Debug(55): [ nvclk=88771 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=88771 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [88585995538 ps] addr=0x200000000004 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x180583150 data_ptr=0x17d7a5430
+Info: [ nvclk=88771 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 00 00 aa 
+Info: [ nvclk=88771 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 00 00 ff 
+Debug(55): [ nvclk=88771 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000004 for bytes 4
+Debug(55): [ nvclk=88771 gpu_wrapper . commlib_chi_transactor.cpp 1033 ] aligned address for above request is 0x200000000000 for data beats 0
+\
+Debug(55): [ nvclk=89720 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=89720 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [89534550019 ps] addr=0x200000000008 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x18f3fed70 data_ptr=0x166a1f200
+Info: [ nvclk=89720 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: aa 00 00 00 
+Info: [ nvclk=89720 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: ff 00 00 00 
+Debug(55): [ nvclk=89720 gpu_wrapper . commlib_chi_transactor.cpp 1029 ] sending write to address 0x200000000008 for bytes 4
+\
+Debug(55): [ nvclk=90695 gpu_wrapper . commlib_chi_transactor.cpp 988 ] process_write_request_to_gpu() called 
+Info: [ nvclk=90695 gpu_wrapper . commlib_chi_transactor.cpp 1005 ] PWR_GPU IN  [90509910027 ps] addr=0x200000000008 len=4 cmd=1 sw=1 be_len=4 be_ptr=0x1805db4f0 data_ptr=0x1618d3e70
+Info: [ nvclk=90695 gpu_wrapper . commlib_chi_transactor.cpp 1018 ]   data[0..4]: 00 aa 00 00 
+Info: [ nvclk=90695 gpu_wrapper . commlib_chi_transactor.cpp 1026 ]   be  [0..4]: 00 ff 00 00 
+

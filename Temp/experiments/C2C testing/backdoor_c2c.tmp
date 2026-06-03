@@ -12,5 +12,85 @@ Info: [ nvclk=-1 nv_top . nv_top_full.cpp 634 ] Created backdoor memory mapfile:
 
 2. Parse simout.txt and look for line "Created backdoor memory mapfile: /proc/198456/fd/3" and extract mapfile "/proc/198456/fd/3"
 
-3. Update devproc json file "$GPU_DEVPROC_ROOT_DIR/devproc/conf/devproc_gr102_conf_0.json" and "$GPU_DEVPROC_ROOT_DIR/devproc/conf/devproc_gr102_conf_1.json" to append -use_linsim_memstore -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -linsim_memstore_lib libtb500_backdoormem.so -linsim_client_name kepler_fmodel -linsim_store_name /proc/198456/fd/3 at the tail of item "chipargs"
+3. Update devproc json file "$GPU_DEVPROC_ROOT_DIR/devproc/conf/devproc_gr102_conf_0.json" and "$GPU_DEVPROC_ROOT_DIR/devproc/conf/devproc_gr102_conf_1.json" to append -use_linsim_memstore -emem_type micron_lpddr4x_jedec_4CH_2R_8GB_2133 -linsim_memstore_lib libtb500_backdoormem.so -linsim_client_name hopper_fmodel -linsim_store_name /proc/198456/fd/3 -soc_vidmem_base=0x200000000000 at the tail of item "chipargs"
 
+
+
+
+def build_appendix(mapfile: str, emem: str, lib: str, client: str) -> str:
+    return (
+        " -use_linsim_memstore"
+        f" -emem_type {emem}"
+        f" -linsim_memstore_lib {lib}"
+        f" -linsim_client_name {client}"
+        f" -linsim_store_name {mapfile}"
+    )
+
+
+
+
+[Buildroot OS] VRU on SCSIM
+
+RM_LOAD_CMD="sudo sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'; sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'"
+
+for native GPU:
+sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+Try to disable escape call to Native GPU:
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+
+for commlib GPU:
+root@pset$ dmesg | grep iommu
+[    0.222959] iommu: Default domain type: Passthrough
+[    0.412760] pci 0002:00:00.0: Adding to iommu group 0
+[    0.412819] pci 0002:01:00.0: Adding to iommu group 1
+[    0.412859] pci 0003:00:00.0: Adding to iommu group 2
+[    0.412999] pci 0003:01:00.0: Adding to iommu group 3
+[    0.413059] pci 0005:00:00.0: Adding to iommu group 4
+[    0.413119] pci 0005:01:00.0: Adding to iommu group 5
+[    0.413180] pci 0006:00:00.0: Adding to iommu group 6
+[    0.414700] pci 0001:00:00.0: Adding to iommu group 7
+root@pset$ lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0003:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0003:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:30bf] (rev a1)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 CXL [0502]: NVIDIA Corporation Device [10de:bee0] (rev 01)
+0006:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+root@pset$ echo DMA > /sys/kernel/iommu_groups/3/type
+
+
+sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+
+root@pset$ busybox devmem 0x200000000000 32
+0x00000000
+
+root@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 --verbose
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (228 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (229 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (229 ms total)
+[  PASSED  ] 1 test.
+root@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 --verbose
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (237 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (237 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (237 ms total)
+[  PASSED  ] 1 test.

@@ -1,0 +1,4 @@
+
+
+- The TCX10 FW to correctly configure at least the PCIe switch after reset.
+- The TCX10 NIC SW (kernel mode drivers, etc) to only be needed when using the NICs to generate network traffic.
