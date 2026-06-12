@@ -8,6 +8,10 @@ nvidia@pset$ sudo sh -c 'echo DMA > /sys/kernel/iommu_groups/5/type'
 
 nvidia@pset$ sudo sh nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;RmOverrideC2CLinks=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
 
+with PCIe path:
+
+root@ubuntu-L1:/home/nvidia# bash nvload_rm.sh -v -d -b gr100_sim_hbm4_gracenext.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2'
+
 
 nvidia@pset$ ./channel_srt_dgpu --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
@@ -19,6 +23,10 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 
 
 
+
+
+
+In Ubuntu OS 22.04:
 
 root@ubuntu-L1:/home/nvidia# rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio 
 rmmod: ERROR: Module nvidia_drm is not currently loaded

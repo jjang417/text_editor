@@ -1,0 +1,5 @@
+
+#jjang_bot token:
+
+# jjang slack user ID: U06CRFD2Y05
+

@@ -94,3 +94,12 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test suite ran. (237 ms total)
 [  PASSED  ] 1 test.
+
+
+
+[GPU fmod C2C read/write validation]
+
+
+Since our run uses the simfront backend (BackdoorMemSimFront), so GPU‑HBM writes go through a direct mmap pointer and never call BackdoorMemWrite. The flag check is never reached → no logs, by design of that config.
+So even we use GDB to change the debug variables mem_debug_reads/write, we still cannot expect to see backdoor memory read/write logs.
+

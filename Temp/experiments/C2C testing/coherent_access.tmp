@@ -1,0 +1,89 @@
+# Backdoor Memory Lock API — Quick Start
+
+Lets any client (CPU, GPU0, GPU1, …) read/write a range of the backdoor mapfile
+**without colliding** with another client's overlapping range.
+
+## The one rule
+
+> **Lock the range → read/write it → release it.**
+
+Everyone uses the *same three calls* — no CPU/GPU roles.
+
+## The calls
+
+| Call | Use it to… |
+|------|------------|
+| `BackdoorMemLockInit(path)` | Set up, once per process (same `path` as the store). |
+| `CheckAndWaitBeforeReadWrite(addr, size, mode, timeout_ms)` | **Wait + lock** a range before touching it. |
+| `ReleaseLockForMemory(addr, size)` | **Unlock** when done. |
+
+`mode` is `BDMEM_READ` (shared — many readers OK) or `BDMEM_WRITE` (exclusive).
+`timeout_ms = 0` means wait forever. Returns `BDMEM_OK` on success.
+
+Helpers: `LockForMemory()` (block forever, no timeout), `TryLockForMemory()`
+(non‑blocking, returns `BDMEM_BUSY` if taken).
+
+## What you get
+
+- Overlapping ranges (any write) → **serialized** (no clobber / no half‑read).
+- Disjoint ranges → **run in parallel** (no false blocking).
+- Many readers share; a writer is exclusive.
+
+## Simplest example
+
+```c
+#include "backdoormem_coherence.h"
+
+BackdoorMemLockInit("/path/to/store");          // once
+unsigned char* p = BackdoorGetAddr_c("main", PADDR, "region", 0);
+
+/* writing */
+if (CheckAndWaitBeforeReadWrite(PADDR, SIZE, BDMEM_WRITE, 5000) == BDMEM_OK) {
+    /* ... write p[0..SIZE) via the fast pointer ... */
+    ReleaseLockForMemory(PADDR, SIZE);
+}
+
+/* reading */
+if (CheckAndWaitBeforeReadWrite(PADDR, SIZE, BDMEM_READ, 5000) == BDMEM_OK) {
+    /* ... read p[0..SIZE) — sees a complete, consistent snapshot ... */
+    ReleaseLockForMemory(PADDR, SIZE);
+}
+```
+
+## C++: can't‑forget‑to‑unlock version
+
+```cpp
+{
+    BackdoorMemRange lock(PADDR, SIZE, BDMEM_WRITE);   // locks here
+    if (lock.ok()) {
+        /* ... write the range ... */
+    }
+}   // auto-released here (even on early return or exception)
+```
+
+## Good habits
+
+- Lock the **whole range** you'll touch, in the right **mode**; always release.
+- Lock per **region/batch** (lock once, do many accesses) — not per byte.
+- Only protects clients that actually call the lock (it's advisory/cooperative).
+
+## Same host vs. cross host — *no API change*
+
+Identical code both ways. `BackdoorMemLockInit` auto‑detects the storage:
+- **Local file** → fast OFD locks.
+- **NFS/cluster file** → POSIX locks + `msync` (slower, page‑granular).
+
+Only extra step for cross‑host: call once after mapping —
+`BackdoorMemLockBindMapping(base_va, base_pa, size)` — and keep the store on the
+shared mount.
+
+## Return codes
+
+`BDMEM_OK` (0) · `BDMEM_TIMEOUT` (1) · `BDMEM_BUSY` (2, TryLock only) · `BDMEM_ERR` (-1)
+
+## Files
+
+- `backdoormem_coherence.h` — the API + C++ RAII guard
+- `backdoormem_coherence.cpp` — implementation (same‑host + cross‑host)
+- `backdoormem_coherence_example.c` — usage patterns
+- `backdoormem_coherence_test.cpp` — multi‑process/‑thread test harness

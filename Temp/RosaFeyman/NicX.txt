@@ -40,3 +40,83 @@
   │ path       │  get_resource_path)                      │                      │ device      │ set_resource_base() after mlx_di_load (DevProc.cpp:280)                                  │
   └────────────┴──────────────────────────────────────────┴──────────────────────┴─────────────┴──────────────────────────────────────────────────────────────────────────────────────────┘
 
+
+
+  PCIe Bridge Data Flow
+
+  ┌──────────────────────────────────────────────────────────────────────────────┐
+  │                                   NODE                                       │
+  │                                                                              │
+  │              ┌───────────────────────────────────────────┐                   │
+  │              │           CPU Root Complex (RC)           │                   │
+  │              └──────────────┬────────────────┬───────────┘                   │
+  │                             │                │                               │
+  │                 PCIe upstream x16      PCIe upstream x16                     │
+  │                             │                │                               │
+  │      ┌──────────────────────▼──┐    ┌────────▼────────────────────┐          │
+  │      │      ConnectX-10 #0     │    │       ConnectX-10 #1        │          │
+  │      │  ┌─────────────────────┐│    │┌─────────────────────┐      │          │
+  │      │  │     PCIe Bridge     ││    ││     PCIe Bridge     │      │          │
+  │      │  │   (upstream ↔ down) ││    ││   (upstream ↔ down) │      │          │
+  │      │  ├─────────────────────┤│    │├─────────────────────┤      │          │
+  │      │  │     NIC Engine      ││    ││     NIC Engine      │      │          │
+  │      │  │  ② DMA Read  ▲      ││    ││  ④ DMA Write ▼     │      │          │
+  │      │  │     QP / CQ         ││    ││     QP / CQ         │      │          │
+  │      │  └─────────────────────┘│    │└─────────────────────┘      │          │
+  │      │  ③ Packetize→RoCEv2/IB │    │ ③ Depacketize←RoCEv2/IB     │          │
+  │      └─────────────┬───────────┘    └──────────────┬──────────────┘          │
+  │                    │                               │                         │
+  │       PCIe downstream x16                PCIe downstream x16                 │
+  │    ①  NIC DMA Read ▲                          NIC DMA Write ▼  ④            │
+  │                    │                               │                         │
+  │             ┌──────▼──────┐                 ┌──────▼──────┐                  │
+  │             │    GPU 0    │                 │    GPU 1    │                  │
+  │             │  ┌───────┐  │                 │  ┌───────┐  │                  │
+  │             │  │  Buf  │  │ ← ① SEND start  │  │  Buf  │  │ ← ④ RECV land   │ 
+  │             │  └───────┘  │                 │  └───────┘  │                  │
+  │             └─────────────┘                 └─────────────┘                  │
+  └─────────────────────┬───────────────────────────────┬────────────────────────┘
+                        │                               │
+         ═══════════════╪═══════════════════════════════╪══════════════
+           SEND ③ ──────┼──────────────────────────────►│
+                        │◄──────────────────────────────┼────── ③ RECV
+         ═══════════════╪═══════════════════════════════╪══════════════
+                        │                               │
+                   Remote Node A                   Remote Node B
+
+
+    SEND path:  ① GPU 0 Buf → ② NIC DMA Read (PCIe downstream ▲)
+                → ③ Packetize → Wire → Remote Node A
+
+    RECV path:  Remote Node B → Wire → ③ Depacketize
+                → ④ NIC DMA Write (PCIe downstream ▼) → GPU 1 Buf
+
+
+  RDMA Data Path with Bridge Mode
+
+  GPU 0 → Remote Node (SEND)
+
+  GPU 0 Buffer
+       │
+       │  ① NIC DMA Read  (PCIe downstream — extremely short path,
+       │                   GPU is directly behind the NIC)
+       ▼
+  ConnectX-10 #0  (NIC Engine)
+       │
+       │  ② Packetize → RoCE v2 / IB headers
+       ▼
+  Network Wire → Remote Node
+
+  Remote Node → GPU 1 (RECEIVE)
+
+  Network Wire
+       │
+       │  ① Packet arrives at ConnectX-10 #1
+       ▼
+  ConnectX-10 #1 (NIC Engine)
+       │
+       │  ② NIC DMA Write (PCIe downstream directly into GPU 1 memory)
+       ▼
+  GPU 1 Buffer
+
+
