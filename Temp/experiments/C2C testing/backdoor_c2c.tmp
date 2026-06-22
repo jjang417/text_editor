@@ -103,3 +103,224 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 Since our run uses the simfront backend (BackdoorMemSimFront), so GPU‑HBM writes go through a direct mmap pointer and never call BackdoorMemWrite. The flag check is never reached → no logs, by design of that config.
 So even we use GDB to change the debug variables mem_debug_reads/write, we still cannot expect to see backdoor memory read/write logs.
 
+
+
+
+[Backdoor C2C] (Disable GPU ATS and IOMMU)
+
+#1. Remove the stale RM
+rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio
+
+
+#2. Load the RM with below regkeys
+sudo bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x0;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+#3. Disable the WDT
+sudo sysctl -w kernel.watchdog_thresh=0
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi
+Thu May 14 03:41:25 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 615.00                 KMD Version: 615.00        CUDA UMD Version: 13.4     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Graphics Device                On  |   00000003:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  12288MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 --verbose
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+initObject: Allocated RM object: client=c1d0001b, parent=c1d0001b, object=c1d0001b, class=41
+rmControl: client=c1d0001b, object=c1d0001b, cmd=214
+rmControl: client=c1d0001b, object=c1d0001b, cmd=215
+rmControl: client=c1d0001b, object=c1d0001b, cmd=202
+initObject: Allocated RM object: client=c1d0001b, parent=c1d0001b, object=aa000000, class=80
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=ab000000, class=2080
+ConstructVASpace: Allocating: bb000000 [90f1]
+ConstructVASpace: Allocation base = 0x100000, limit = 0x1ffffffffefffff
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=bb000000, class=90f1
+rmControl: client=c1d0001b, object=ab000000, cmd=20800170
+rmControl: client=c1d0001b, object=ab000000, cmd=20801303
+rmControl: client=c1d0001b, object=ab000000, cmd=20800124
+rmControl: client=c1d0001b, object=ab000000, cmd=20800124
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00000, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00001, class=0
+CpuVirtMapping: Mapped to 0xffff9cbbb000 [offset = 0x0, length = 0x400]
+GpuVirtMapping: client=c1d0001b, device=aa000000, virt=caf00001, phys=caf00000, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100000000 [offset = 0x0, length = 0x400]
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00002, class=0
+CpuVirtMapping: Mapped to 0xffff9cbba000 [offset = 0x0, length = 0x1000]
+rmControl: client=c1d0001b, object=ab000000, cmd=20800119
+rmControl: client=c1d0001b, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00003, class=0
+CpuVirtMapping: Mapped to 0xffff9cbb9000 [offset = 0x0, length = 0x200]
+FermiChannelImpl: Allocating: (cc000000, c96f, [caf00002, caf00001])
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=cc000000, class=c96f
+FermiChannelImpl: ChID: 0x1, CID: 0x9
+rmControl: client=c1d0001b, object=ab000000, cmd=20800102
+rmControl: client=c1d0001b, object=ab000000, cmd=20801701
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf0000a, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf0000b, class=0
+CpuVirtMapping: Mapped to 0xffff9c680000 [offset = 0x0, length = 0x20000]
+GpuVirtMapping: client=c1d0001b, device=aa000000, virt=caf0000b, phys=caf0000a, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100010000 [offset = 0x0, length = 0x20000]
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf0000c, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf0000d, class=0
+CpuVirtMapping: Mapped to 0xffff9c660000 [offset = 0x0, length = 0x20000]
+GpuVirtMapping: client=c1d0001b, device=aa000000, virt=caf0000d, phys=caf0000c, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100030000 [offset = 0x0, length = 0x20000]
+Test seed = 0x6a38c15a
+Copy size = 131072 bytes
+Page size = big
+Source location = vidmem
+Destination location = vidmem
+Writting data to source mapping : 1951777214 
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf0000e, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf0000f, class=0
+CpuVirtMapping: Mapped to 0xffff9cbb8000 [offset = 0x0, length = 0x400]
+GpuVirtMapping: client=c1d0001b, device=aa000000, virt=caf0000f, phys=caf0000e, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100050000 [offset = 0x0, length = 0x400]
+rmControl: client=c1d0001b, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00010, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00011, class=0
+CpuVirtMapping: Mapped to 0xffff9cbb7000 [offset = 0x0, length = 0x4]
+GpuVirtMapping: client=c1d0001b, device=aa000000, virt=caf00011, phys=caf00010, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100060000 [offset = 0x0, length = 0x4]
+rmControl: client=c1d0001b, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00012, class=0
+CpuVirtMapping: Mapped to 0xffff9cbb6000 [offset = 0x0, length = 0x1000]
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0001b, parent=aa000000, object=caf00013, class=0
+GpuVirtMapping: client=c1d0001b, device=aa000000, virt=caf00013, phys=caf00012, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100070000 [offset = 0x0, length = 0x1000]
+rmControl: client=c1d0001b, object=ab000000, cmd=20800124
+rmControl: client=c1d0001b, object=ab000000, cmd=20800124
+initObject: Allocated RM object: client=c1d0001b, parent=cc000000, object=dd000000, class=c9b5
+rmControl: client=c1d0001b, object=cc000000, cmd=906f0101
+schedule: Channel: cc000000
+rmControl: client=c1d0001b, object=cc000000, cmd=906f0101
+flush: Writing GPFIFO entry: 0 (length=22, value = (70000, 5801))
+rmControl: client=c1d0001b, object=ab000000, cmd=20801701
+rmControl: client=c1d0001b, object=ab000000, cmd=20800124
+rmControl: client=c1d0001b, object=ab000000, cmd=20800124
+rmControl: client=c1d0001b, object=ab000000, cmd=20801701
+RingDoorbell: Allocating usermode object for doorbell: ac000000 [type=c761]
+IProgressMarkerImpl: Marker created at addr 0xffff9cbb8000 / 0x100050000
+flush: Writing GPFIFO entry: 1 (length=7, value = (70058, 1c01))
+rmControl: client=c1d0001b, object=ab000000, cmd=20801701
+IProgressMarkerImpl: Marker created at addr 0xffff9cbb7000 / 0x100060000
+flush: Writing GPFIFO entry: 2 (length=6, value = (70074, 1801))
+rmControl: client=c1d0001b, object=ab000000, cmd=20801701
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=cc000000, object=dd000000, class=c9b5
+~GpuVirtMapping: Unmapped GPU memory 0x100070000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00013, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff9cbb6000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00012, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100060000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00011, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff9cbb7000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00010, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100050000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf0000f, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff9cbb8000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf0000e, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100030000
+unmap
+unmap: Unmapped CPU memory at 0xffff9c660000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf0000d, class=0
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf0000c, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100010000
+unmap
+unmap: Unmapped CPU memory at 0xffff9c680000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf0000b, class=0
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf0000a, class=0
+~UserD: Destructing UserD ....
+unmap
+unmap: Unmapped CPU memory at 0xffff9cbb9000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00003, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff9cbbb000
+~GpuVirtMapping: Unmapped GPU memory 0x100000000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00001, class=0
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00000, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff9cbba000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=caf00002, class=0
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=cc000000, class=c96f
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=bb000000, class=90f1
+~Subdevice: Freeing usermode RM object: client=c1d0001b, parent=ab000000, object=ac000000
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=aa000000, object=ab000000, class=2080
+rmControl: client=c1d0001b, object=c1d0001b, cmd=216
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=c1d0001b, object=aa000000, class=80
+~IObjectImpl: Freeing RM object: client=c1d0001b, parent=c1d0001b, object=c1d0001b, class=41
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (1053 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (1054 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (1086 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (939 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (945 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (947 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (970 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (977 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (979 ms total)
+[  PASSED  ] 1 test.

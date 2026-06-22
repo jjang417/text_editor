@@ -7,7 +7,7 @@
  
 
  <X86 768 GB DDR machine>
-  ssh root@10.63.145.118 
+  ssh root@10.63.129.79 
   password: jjydl325g11-2067
 
 <Enable root user permission>
