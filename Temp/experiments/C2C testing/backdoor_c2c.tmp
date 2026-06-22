@@ -115,8 +115,6 @@ rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio
 #2. Load the RM with below regkeys
 sudo bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x0;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
 
-#3. Disable the WDT
-sudo sysctl -w kernel.watchdog_thresh=0
 
 root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
 root@ubuntu-L1:/home/nvidia# nvidia-smi
