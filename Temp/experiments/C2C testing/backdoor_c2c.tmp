@@ -322,3 +322,67 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test suite ran. (979 ms total)
 [  PASSED  ] 1 test.
+
+
+
+
+[Backdoor C2C] (Disable GPU ATS and IOMMU)
+
+#1. Enable IOMMU for commlib GPU
+root@pset$ dmesg | grep iommu
+[    0.222959] iommu: Default domain type: Passthrough
+[    0.412760] pci 0002:00:00.0: Adding to iommu group 0
+[    0.412819] pci 0002:01:00.0: Adding to iommu group 1
+[    0.412859] pci 0003:00:00.0: Adding to iommu group 2
+[    0.412999] pci 0003:01:00.0: Adding to iommu group 3
+[    0.413059] pci 0005:00:00.0: Adding to iommu group 4
+[    0.413119] pci 0005:01:00.0: Adding to iommu group 5
+[    0.413180] pci 0006:00:00.0: Adding to iommu group 6
+[    0.414700] pci 0001:00:00.0: Adding to iommu group 7
+root@pset$ lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0003:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0003:01:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:30bf] (rev a1)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 CXL [0502]: NVIDIA Corporation Device [10de:bee0] (rev 01)
+0006:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+root@pset$ echo DMA > /sys/kernel/iommu_groups/3/type
+root@pset$ echo DMA > /sys/kernel/iommu_groups/7/type
+
+#2. Remove the stale RM
+rmmod nvidia_drm; rmmod nvidia_modeset; rmmod nvidia; rmmod nvidia_vgpu_vfio
+
+
+#3. Load the RM with below regkeys
+sudo bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmOverrideSelfHostedMode=0x1;RmOverrideC2CLinks=0x1;RmOverrideCoherentCpuFbBase=0x2000;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver'
+
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi
+
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (1116 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (1181 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (1209 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (923 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (930 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (935 ms total)
+[  PASSED  ] 1 test.
