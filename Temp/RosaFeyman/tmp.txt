@@ -2,3 +2,25 @@
 
 - The TCX10 FW to correctly configure at least the PCIe switch after reset.
 - The TCX10 NIC SW (kernel mode drivers, etc) to only be needed when using the NICs to generate network traffic.
+
+
+I take a look at the ConnectX PRM from https://apps.nvidia.com/pid/contentlibraries/detail?id=1077937 
+
+
+I base on the document to create a quick reference table by following. (HW topology: CPU -> PCIe up stream -> NIC -> PCIe downstream -> GPU)
+ 
+
+  ┌─────┬─────────────────┬─────────────────┬────────────────────────────────────────┬──────────────────────────────────────┬─────────────────────────┐
+  │  #  │   Access type   │    Direction    │          PCIe TLP / mechanism          │      Routing through NIC switch      │      Address basis      │
+  ├─────┼─────────────────┼─────────────────┼────────────────────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
+  │ 1   │ PCIe Config     │ CPU → NIC → GPU │ CfgRd0 / CfgWr0                        │ Downstream, ID/BDF-routed            │ BDF (0006:01:00.0)      │
+  ├─────┼─────────────────┼─────────────────┼────────────────────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
+  │ 2   │ PCIe MMIO       │ CPU → NIC → GPU │ MRd / MWr (Memory Request)             │ Downstream, BAR/LIMIT address-routed │ GPU BARs (8051…)        │
+  ├─────┼─────────────────┼─────────────────┼────────────────────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
+  │ 3   │ PCIe Sysmem/DMA │ GPU → NIC → CPU │ MWr (posted) / MRd → CplD              │ Upstream → root complex → DRAM       │ Host phys / IOVA (+ATS) │
+  ├─────┼─────────────────┼─────────────────┼────────────────────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
+  │ 4   │ PCIe IRQ        │ GPU → NIC → CPU │ Msg TLP: Assert/Deassert_INTx (legacy) │ Upstream, INTx swizzle → IRQ 92      │ Virtual wire            │
+  ├─────┼─────────────────┼─────────────────┼────────────────────────────────────────┼──────────────────────────────────────┼─────────────────────────┤
+  │ 5   │ C2C / GRS       │ CPU ↔ NIC ↔ GPU │ Coherent load/store (not PCIe)         │ Bypasses NIC/PCIe switch             │ Unified coherent addr   │
+  └─────┴─────────────────┴─────────────────┴────────────────────────────────────────┴──────────────────────────────────────┴─────────────────────────┘
+
