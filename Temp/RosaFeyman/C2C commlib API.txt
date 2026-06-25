@@ -1,0 +1,35 @@
+
+
+
+
+CPU to GPU C2C call flow:
+1. CPU send C2C requet packet to GPU:
+    In CPU process, SCSIM gpu_wrapper -> commslib_c2c_adapter::c2c_soc_to_gpu_req() -> commlib C2CIPC::ipcC2CWriteCall() -> mq_send() to "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_gpu_access_queue"
+    In GPU process, commlib c2c_serv_request_thread() -> mq_receive() from "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_gpu_access_queue" -> callback.process_c2c_soc_to_gpu_req() -> GPU fmod send_req2gpu_ptr() -> GPU fmod
+
+2. CPU send C2C data packet to GPU:
+    In CPU process, SCSIM gpu_wrapper -> commslib_c2c_adapter::c2c_soc_to_gpu_data() -> commlib C2CIPC::ipcC2CWriteCall() -> mq_send() to "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_gpu_access_queue"
+    In GPU process, commlib c2c_serv_request_thread() -> mq_receive() from "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_gpu_access_queue" -> callback.process_c2c_soc_to_gpu_data() -> GPU fmod send_data2gpu_ptr() -> GPU fmod
+
+3. CPU send C2C response packet to GPU:
+    In CPU process, SCSIM gpu_wrapper -> commslib_c2c_adapter::c2c_soc_to_gpu_resp() -> commlib C2CIPC::ipcC2CWriteCall() -> mq_send() to "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_gpu_access_queue"
+    In GPU process, commlib c2c_serv_request_thread() -> mq_receive() from "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_gpu_access_queue" -> callback.process_c2c_soc_to_gpu_resp() -> GPU fmod send_resp2gpu_ptr() -> GPU fmod
+
+GPU to CPU C2C call flow:
+1. GPU send C2C requet packet to CPU:
+    In GPU process, GPU fmod -> devproc gpu2soc_memory_request() -> commlib C2CIPC::ipcC2CWriteCall() -> mq_send() to "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_cpu_access_queue"
+    In CPU process, commlib c2c_serv_request_thread() -> mq_receive() from "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_cpu_access_queue" -> callback.process_c2c_gpu_to_soc_req() -> commlib_adapter ProcessGpuToSoCReq() -> SCSIM gpu_wrapper
+
+2. GPU send C2C data packet to CPU:
+    In GPU process, GPU fmod -> devproc gpu2soc_memory_data() -> commlib C2CIPC::ipcC2CWriteCall() -> mq_send() to "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_cpu_access_queue"
+    In CPU process, commlib c2c_serv_request_thread() -> mq_receive() from "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_cpu_access_queue" -> callback.process_c2c_gpu_to_soc_data() -> commlib_adapter ProcessGpuToSoCData() -> SCSIM gpu_wrapper
+
+3. GPU send C2C response packet to CPU:
+    In GPU process, GPU fmod -> devproc gpu2soc_memory_response() -> commlib C2CIPC::ipcC2CWriteCall() -> mq_send() to "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_cpu_access_queue"
+    In CPU process, commlib c2c_serv_request_thread() -> mq_receive() from "/dev/mqueue/SCSIM_TB500_0_C2C_GPU_0_C2C_cpu_access_queue" -> callback.process_c2c_gpu_to_soc_resp() -> commlib_adapter ProcessGpuToSoCResp() -> SCSIM gpu_wrapper
+
+
+Reference source files:
+commlib adapter: https://gitlab-master.nvidia.com/systemsim/next/commlib_adapter/-/blob/main/commlib_adapter.cpp
+commlib: https://gitlab-master.nvidia.com/systemsim/next/commlib/-/blob/main/src/commlib_mq_c2c.cpp
+GPU devproc: https://gitlab-master.nvidia.com/systemsim/next/devproc/-/blob/add_c2c_for_devproc_gpu/c2c_utilities.cpp
