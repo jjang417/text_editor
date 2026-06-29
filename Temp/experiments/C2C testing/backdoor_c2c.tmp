@@ -386,3 +386,97 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test suite ran. (935 ms total)
 [  PASSED  ] 1 test.
+
+
+
+root@dl325g11-2067:~/vru_6/weaver# ansible-playbook -i inventories/vru.yml weaver.yml   -e config=vru_cg2q -e platform=vru -e c2c_enable=true -e c2c_ats_enable=true -e gpu_fmodel_build=101796686 --tags prepare,start_containers
+...
+
+root@dl325g11-2067:~/vru_6/weaver# ssh nvidia@172.17.0.100
+nvidia@172.17.0.100's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-163-generic aarch64)
+...
+Last login: Mon Jun 29 03:26:16 2026 from 172.17.0.1
+nvidia@ubuntu-L1:~$ sudo -s
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/vera_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;EnableUserNUMAManagement=0;CoherentGPUMemoryMode=driver;RmOverrideC2CLinks=0x1;RMForceNetlistNumber=2;RmDisableCtxswUcodeFromChiplib=1'
+...
+
+EnableGpuFirmware=0 NVreg_RmMsg=:
+============================================================
+ Vera guest setup complete
+============================================================
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi
+Mon Jun 29 06:49:05 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 620.00                 KMD Version: 620.00        CUDA UMD Version: 13.5     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Graphics Device                On  |   00000003:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  Graphics Device                On  |   00000006:01:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+root@ubuntu-L1:/home/nvidia/RM/tests-Linux-aarch64/resman# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (683 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (692 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (693 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia/RM/tests-Linux-aarch64/resman# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (672 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (681 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (683 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia/RM/tests-Linux-aarch64/resman# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (678 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (688 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (689 ms total)
+[  PASSED  ] 1 test.
+root@ubuntu-L1:/home/nvidia/RM/tests-Linux-aarch64/resman# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (676 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (676 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (683 ms total)
+[  PASSED  ] 1 test.
