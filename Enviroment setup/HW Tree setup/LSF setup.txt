@@ -62,3 +62,12 @@ destination_dir="/home/scratch.jjang_sw/TB500_TEST_LIB"
 
 "HW_TREE_NET15/NET15_clone_tree/output/NET15_clone_tree/vot/cmod/gpu/scsim/tb500_Linux_x86_64/libtb500_gpu_sc.so"
 "HW_TREE_NET15/NET15_clone_tree/output/NET15_clone_tree/vot/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/tb500_Linux_x86_64/libtb500_gpu_wrapper_fsim.so"
+
+
+[SCSIM AS2 pre checkin command]
+
+nvrun scsim_as2_pre_checkin_sanity.sh tb500
+
+After getting 2 SCSIM reviewers voted on the CL revew, we could submit the HW CL by 
+
+as2 submit -c <changelist>
