@@ -1,0 +1,58 @@
+
+
+https://p4hw-swarm.nvidia.com/reviews/98346237/
+
+File: //hw/nvmobile_tb50x_cmod_NET_Rel_1/cmod/gpu/scsim/nic_sc_commlib.cpp
+
+static inline uint32_t pack_cfg_addr(const pci_addr_type &addr)
+{
+    return ((addr.Offset & 0xF00) << 16)     // cfg_off[11:8] -> bits [27:24]
+         | ((addr.Bus      & 0xFF) << 16)    // bus           -> bits [23:16]                                                                                                        
+         | ((addr.Device   & 0x1F) << 11)    // device        -> bits [15:11]                                                                                                        
+         | ((addr.Function & 0x07) <<  8)    // function      -> bits [10:8]                                                                                                         
+         |  (addr.Offset   & 0xFF);          // cfg_off[7:0]  -> bits [7:0]                                                                                                          
+}
+
+nic_pcie_commlib_intf::pci_status_type nic_pcie_commlib_intf::PCIRead(pci_addr_type addr, uint32_t bytes, uint8_t *data)
+{
+    cslDebug((20, "NIC_PCIE_COMMLIB_INTF : PCIRead request, bus:0x%x dev:0x%x func:0x%x offset:0x%x bytes:%d\n",
+              addr.Bus, addr.Device, addr.Function, addr.Offset, bytes));
+    cslAssertMsg((bytes <= 4), ("ERROR:: Can not read more than 4 bytes\n"));
+ 
+    if (addr.Device != 0 || addr.Function != 0) {
+        uint32_t no_device = 0xFFFFFFFF;
+        memcpy(data, (uint8_t*)&no_device, 4);
+        return scsim::cmod::PCI_STATUS_OK;
+    }
+ 
+    cslDebug((20, "NIC_PCIE_COMMLIB_INTF: Going to set requesterID"));
+    nic_this_ptr->set_requesterID(addr.Bus, addr.Device, addr.Function);
+ 
+    uint32_t data_read = nic_this_ptr->NicConfigRead(pack_cfg_addr(addr));
+    cslDebug((20, "NIC_PCIE_COMMLIB_INTF : PCIRead data byte: 0x%x\n", data_read));
+    memcpy(data, (uint8_t*)&data_read, 4);
+ 
+    return scsim::cmod::PCI_STATUS_OK;
+}
+ 
+nic_pcie_commlib_intf::pci_status_type nic_pcie_commlib_intf::PCIWrite(pci_addr_type addr, uint32_t bytes, uint8_t *data)
+{
+    cslDebug((20, "NIC_PCIE_COMMLIB_INTF : PCIWrite request, bus:0x%x dev:0x%x func:0x%x offset:0x%x\n",
+              addr.Bus, addr.Device, addr.Function, addr.Offset));
+    cslAssertMsg((bytes <= 4), ("ERROR:: Can not write more than 4 bytes\n"));
+ 
+    if (addr.Device != 0 || addr.Function != 0) {
+        return scsim::cmod::PCI_STATUS_OK;
+    }
+ 
+    uint32_t data_word = 0;
+    memcpy((uint8_t*)&data_word, data, 4);
+ 
+    cslDebug((20, "NIC_PCIE_COMMLIB_INTF: Going to set requesterID"));
+    nic_this_ptr->set_requesterID(addr.Bus, addr.Device, addr.Function);
+ 
+    cslDebug((20, "NIC_PCIE_COMMLIB_INTF : PCIWrite offset:0x%x data:0x%x\n", addr.Offset, data_word));
+    nic_this_ptr->NicConfigWrite(pack_cfg_addr(addr), data_word);
+ 
+    return scsim::cmod::PCI_STATUS_OK;
+}
