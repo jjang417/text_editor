@@ -101,8 +101,6 @@ bash nvload_rm.sh -v -d -b gr102_sim_hbm3.rom -r 'RMDisableAcr=0x1;RmPowerFeatur
 
  
 
- 
-
 Commands to load MSE FW: 
 
  
