@@ -48,3 +48,60 @@ root@ubuntu-L1:/home/nvidia# lspci -nn
 0005:41:00.1 Ethernet controller [0200]: Mellanox Technologies Device [15b3:1027]
 0005:42:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:353f] (rev a1)
 
+
+
+The log shows GPU 1’s IRQ reaches LIC, but LIC masks it before forwarding it to the CPU.
+
+   Source                   LIC line    LIC_IN enable    Result
+  ━━━━━━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   GPU 0 / instance 0    462 (0x1ce)                1    Assert/deassert packets forwarded successfully
+  ────────────────────  ─────────────  ───────────────  ────────────────────────────────────────────────
+   GPU 1 / instance 1    463 (0x1cf)                0    No packet generated; IRQ remains pending
+
+  Key evidence from /root/SimX/weaver/debug_logs/simout.txt:
+
+  1220744: NIC IRQ assert instance_num = 1
+  1220746: interrupts_in[0x1cf] ... Value=1
+  1220752: int_enable[463]=0 interrupts_in[463]=1 force_int[463]=0
+  1220753: NO_NEW_PACKET ...
+
+  There is no subsequent ICR_463, packet_rx_int[463], or interrupts_out[463] event. By comparison, instance 0 has:
+
+  int_enable[462]=1 interrupts_in[462]=1
+  Sending assert packet ... line [462]
+  packet = 0x800001ce
+  interrupts_out[462] asserted
+
+  At boot, only line 462 is configured:
+
+  - ICR_462 at 0x1738
+  - LIC_IN enable bit 14 at 0x2390
+  - LIC_OUT enable bit 14 at 0x23a0
+
+  No equivalent programming exists for line 463. This also explains the pending condition: RM cannot service and clear GPU 1 because its interrupt never reaches the CPU.
+
+
+
+Vera VM CT_0_vera:/opt/scsim/package/simtools/sim_gpvar.py config for NIC
+
+        self.common += " FUSE_SN_OPT_PCIE_DISABLE_0=0x2C "
+        # commlib_client_name from SOC_COMPONENT_ID (e.g. TB500_0 -> SCSIM_TB500_0).
+        # gpu_instance_num_offset = TB500 instance index * 2 (GPUs per TB500) so VDK builds GPU_0..1 for instance 0, GPU_2..3 for instance 1, etc.
+        _component_id = os.environ.get("SOC_COMPONENT_ID", "TB500_0").strip()
+        _commlib_client_name = _component_id if _component_id.startswith("SCSIM_") else "SCSIM_" + _component_id
+        _instance_num = 0
+        if "_" in _component_id:
+            try:
+                _instance_num = int(_component_id.rsplit("_", 1)[-1])
+            except ValueError:
+                pass
+        _max_gpus_per_instance = 2
+        _gpu_instance_num_offset = _instance_num * _max_gpus_per_instance
+        # rf_cg2cx2 NIC-only variant, part 2: with C2/C5 fuse-disabled above it
+        # is SAFE (and necessary) to also drop the commlib GPU registrations.
+        # Registered-but-unattached GPU_0/GPU_1 slots gate the whole platform's
+        # PCIe link training (all root ports stay down, incl. NVMe on C1);
+        # the round-1 E112 crash from zeroing these keys only occurs when the
+        # C2/C5 controllers stay fuse-ENABLED and UEFI probes the unbound
+        # cfg-intf sc_ports �[m~@~T fuse-disabled controllers are never probed.
+        self.common += " disable_gpu_sim=1 use_commlib_gpu_on_pcie_c2=0 use_commlib_gpu_on_pcie_c5=0 use_commlib_nic_on_pcie_c4=1 gpu_pcie_controller=0x25 commlib_adapter_lib=libcommslib_adapter.so commlib_client_name=%s gpu_instance_num_offset=%d " % (_commlib_client_name, _gpu_instance_num_offset)

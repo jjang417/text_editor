@@ -1,0 +1,29 @@
+
+
+https://nvidia.atlassian.net/wiki/spaces/TegraAM/pages/3723821774/TB60x+Cmodel+Branch+tree+creation+and+usage+for+SW+release+patches#Steps-to-be-followed-by-Tree-users-(-Folks-who-want-to-try-out-fixes-%2F-generate-patches-etc...-)%3A
+
+
+
+pwa create -branch nvmobile_tb50x_cmod_NET_Rel_3 nvmobile_tb50x_cmod_tb600_R1d5_clone_tree_new
+
+cd nvmobile_tb50x_cmod_tb600_R1d5_clone_tree_new 
+
+nvprojectname save . business=mobile chip=tb500 group=arch team=sys
+
+
+pwa improvise //hw/nvmobile_tb50x_cmod_R1d5_branch
+
+p4 sync → [ Note : This is not "pwa sync" , This will require 35 to 40GB scratch space. This will also take some time ]
+
+nvprojectname save . mobile_tb500_arch_sys
+
+pwa install //hw/nvmobile_tb50x_cmod_R1d5_release/tree.make.suggested
+
+pwa install //hw/nvmobile_tb50x_cmod_R1d5_release/TOT
+
+pwa install //hw/nvmobile_tb50x_cmod_R1d5_release/etc
+
+cd hw/nvmobile_tb50x_cmod_R1d5_release/
+
+/usr/bin/env IGNORE_ATRACE_ERROR=1 CMOD_SYSC_BUILD=vdk NV_BUILD_VDK_TOP=1 BUILD_VDK_DWMODEL=1 umake -skip build_quality_checks tb500_Linux_x86_64_csim.gsim
+
