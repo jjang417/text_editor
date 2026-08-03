@@ -105,3 +105,26 @@ Vera VM CT_0_vera:/opt/scsim/package/simtools/sim_gpvar.py config for NIC
         # C2/C5 controllers stay fuse-ENABLED and UEFI probes the unbound
         # cfg-intf sc_ports �[m~@~T fuse-disabled controllers are never probed.
         self.common += " disable_gpu_sim=1 use_commlib_gpu_on_pcie_c2=0 use_commlib_gpu_on_pcie_c5=0 use_commlib_nic_on_pcie_c4=1 gpu_pcie_controller=0x25 commlib_adapter_lib=libcommslib_adapter.so commlib_client_name=%s gpu_instance_num_offset=%d " % (_commlib_client_name, _gpu_instance_num_offset)
+
+
+File: Work/remote_fs/scratch/HW_TREE_NET_Rel3/TB600_tree/hw/nvmobile_tb50x_cmod_NET_Rel_3/ip/socd/nv_top/4.0/cmod/nv_top/scsim/system_die/system_top_chiplet/system_top_chiplet.cpp
+
+    , pcie_c4_inta_sig("pcie_c4_inta_sig", NUM_C4_NIC)
+
+     // pcie c4 inta interrupts
+     static const unsigned c4_rp_inta_ids[] = {
+        NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP0_INTA_INTR_ID,
+        NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP1_INTA_INTR_ID,
+        NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP2_INTA_INTR_ID,
+        NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP3_INTA_INTR_ID,
+    };
+    cslAssertMsg((NUM_C4_NIC <= 4), (" NUM_C4_NIC > 4...\n"));
+    for (unsigned i = 0; i < NUM_C4_NIC; i++) {
+        lic_in_s_top->interrupts_in[c4_rp_inta_ids[i]](pcie_c4_inta_sig[i]);
+    }
+
+
+
+SCSIM TB600 + FN102 chipargs
+
+I!gpu_chiplet.cpp(168): GPU command line is '* -chipargs -smTrapStateChangeCheckInterval=10000 -chipargs -event_cover=1 -chipargs -frontdoor_soc_path=1 -chipargs -smAllowUninitializedRegister -chipargs -texHandleErrorsLikeRTL -idle_timeout 0 -chipargs -use_gen6 -chipargs -simtxt max_nvclk 0 -chipargs -chipPOR=fn100 -fslib_mode_disable -chipargs -fs2all_cehub_disable=0xFF -chipargs -sxbar1_cehub_id=0:1:2:3 -chipargs -sxbar0_cehub_id=99:99:99:99 -chipargs -hxbar1_cehub_id=99:99:99 -chipargs -hxbar0_cehub_id=99:99:99 -chipargs -opt_enable_lce_pce_via_mss -chipargs -use_bdf_value=0x100 -chipargs  -chipargs -disable_ats_backdoor -chipargs -chipPOR=fn100 -chipargs -fsf_mode -fslib_mode_disable -chipargs -floorsweep=fbp_enable:0x1:fbio_enable:0xf -chipargs -floorsweep=gpc_enable:0x1:gpc_tpc_enable:0:0x1:gpc_cpc_enable:0:0x1 -chipargs  -chipargs -floorsweep=syspipe_enable:0x1 -chipargs -sriov_BDFShiftSizeInSysmemAddr=56 -chipargs -fmod_hiearchy_provides_die_id -chipargs -mmu_frontdoor_iodie -chipargs -noinstance_ofa -chipargs -noinstance_display -chipargs -drop_pmgr_pri_accesses -chipargs  -chipargs -mux_sel_from_sys_ctrl -chipargs -mux_sel_from_sys_ctrl -chipargs -floorsweep=c2c_disable:0x3:syspipe_enable:0x01:display_disable:1:pmu_enable:0x1:oobhub_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1 -chipargs  -chipargs -fc_ltc_slice_run_loop -chipargs -upstream_path_gen6 -chipargs -pce_connected_to_cehub -chipargs -noinstance_nvjpg -chipargs -noinstance_nvenc -chipargs -noinstance_devices=gr1,gr2,gr3,gr4,gr5,gr6,gr7 -chipargs -noinstance_nvdec -chipargs -xalep2fb_en

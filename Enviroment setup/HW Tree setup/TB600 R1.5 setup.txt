@@ -4,26 +4,25 @@ https://nvidia.atlassian.net/wiki/spaces/TegraAM/pages/3723821774/TB60x+Cmodel+B
 
 
 
-pwa create -branch nvmobile_tb50x_cmod_NET_Rel_3 nvmobile_tb50x_cmod_tb600_R1d5_clone_tree_new
+pwa create -branch nvmobile_tb50x_cmod_NET_Rel_3 nvmobile_tb50x_cmod_tb600_R1d5_clone_tree
 
-cd nvmobile_tb50x_cmod_tb600_R1d5_clone_tree_new 
+cd nvmobile_tb50x_cmod_tb600_R1d5_clone_tree
 
 nvprojectname save . business=mobile chip=tb500 group=arch team=sys
 
+pwa improvise //hw/nvmobile_tb50x_cmod_tb600_R1d5_release
 
-pwa improvise //hw/nvmobile_tb50x_cmod_R1d5_branch
-
-p4 sync → [ Note : This is not "pwa sync" , This will require 35 to 40GB scratch space. This will also take some time ]
+p4 sync
 
 nvprojectname save . mobile_tb500_arch_sys
 
-pwa install //hw/nvmobile_tb50x_cmod_R1d5_release/tree.make.suggested
-
-pwa install //hw/nvmobile_tb50x_cmod_R1d5_release/TOT
-
-pwa install //hw/nvmobile_tb50x_cmod_R1d5_release/etc
-
-cd hw/nvmobile_tb50x_cmod_R1d5_release/
+cd hw/nvmobile_tb50x_cmod_tb600_R1d5_release/
 
 /usr/bin/env IGNORE_ATRACE_ERROR=1 CMOD_SYSC_BUILD=vdk NV_BUILD_VDK_TOP=1 BUILD_VDK_DWMODEL=1 umake -skip build_quality_checks tb500_Linux_x86_64_csim.gsim
 
+
+
+[Pick up NIC wrapper patch]
+> p4 integrate -tid //hw/nvmobile_tb50x_cmod_NET_Rel_3/...@103692426,103692426 //hw/nvmobile_tb50x_cmod_tb600_R1d5_release/...
+
+> p4 resolve
