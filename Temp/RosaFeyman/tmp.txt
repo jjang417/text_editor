@@ -125,6 +125,137 @@ File: Work/remote_fs/scratch/HW_TREE_NET_Rel3/TB600_tree/hw/nvmobile_tb50x_cmod_
 
 
 
+#iods_disable:0x1 cause the fn102 GPU devproc crash during init process.
+
+
+
 SCSIM TB600 + FN102 chipargs
 
 I!gpu_chiplet.cpp(168): GPU command line is '* -chipargs -smTrapStateChangeCheckInterval=10000 -chipargs -event_cover=1 -chipargs -frontdoor_soc_path=1 -chipargs -smAllowUninitializedRegister -chipargs -texHandleErrorsLikeRTL -idle_timeout 0 -chipargs -use_gen6 -chipargs -simtxt max_nvclk 0 -chipargs -chipPOR=fn100 -fslib_mode_disable -chipargs -fs2all_cehub_disable=0xFF -chipargs -sxbar1_cehub_id=0:1:2:3 -chipargs -sxbar0_cehub_id=99:99:99:99 -chipargs -hxbar1_cehub_id=99:99:99 -chipargs -hxbar0_cehub_id=99:99:99 -chipargs -opt_enable_lce_pce_via_mss -chipargs -use_bdf_value=0x100 -chipargs  -chipargs -disable_ats_backdoor -chipargs -chipPOR=fn100 -chipargs -fsf_mode -fslib_mode_disable -chipargs -floorsweep=fbp_enable:0x1:fbio_enable:0xf -chipargs -floorsweep=gpc_enable:0x1:gpc_tpc_enable:0:0x1:gpc_cpc_enable:0:0x1 -chipargs  -chipargs -floorsweep=syspipe_enable:0x1 -chipargs -sriov_BDFShiftSizeInSysmemAddr=56 -chipargs -fmod_hiearchy_provides_die_id -chipargs -mmu_frontdoor_iodie -chipargs -noinstance_ofa -chipargs -noinstance_display -chipargs -drop_pmgr_pri_accesses -chipargs  -chipargs -mux_sel_from_sys_ctrl -chipargs -mux_sel_from_sys_ctrl -chipargs -floorsweep=c2c_disable:0x3:syspipe_enable:0x01:display_disable:1:pmu_enable:0x1:oobhub_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1 -chipargs  -chipargs -fc_ltc_slice_run_loop -chipargs -upstream_path_gen6 -chipargs -pce_connected_to_cehub -chipargs -noinstance_nvjpg -chipargs -noinstance_nvenc -chipargs -noinstance_devices=gr1,gr2,gr3,gr4,gr5,gr6,gr7 -chipargs -noinstance_nvdec -chipargs -xalep2fb_en
+
+
+FN102 GPU fmod log:
+
+AssertMsg: [ nvclk=-1 xtl_ep . xtl_ep.cpp 3998 ]  < failed assert is '(0)' > Unsupported bar                                                                                 
+  AssertMsg: [ nvclk=-1 xtl_ep . xtl_ep.cpp 3998 ]  < failed assert is '(0)' > Unsupported bar                                                                                 
+  AssertMsg: [ nvclk=-1 xtl_ep . xtl_ep.cpp 3998 ]  < failed assert is '(0)' > Unsupported bar                                                                                 
+  AssertMsg: [ nvclk=-1 xtl_ep . xtl_ep.cpp 3998 ]  < failed assert is '(0)' > Unsupported bar
+
+Fixed by GPU Devproc.cpp with 64 bit BAR programming.
+
+  
+
+RM load command:
+
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2'
+
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1'
+
+Next to try:
+
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1;RMExecuteDevinitOnPmu=0'
+
+
+
+#FN102 GPU chipargs:
+root@e40b3e5ff3a4:/app# cat /root/host-shared/custom_config/devproc_fn102_conf_0.json 
+{
+    "fmodel": "fn102",
+    "fmodel_root_dir": "/app",
+    "fmodel_so": "clib/Linux_x86_64/rnlit1_fmodel_64.so",
+    "chipargs": "-simtxt max_nvclk=0 -nvlc_chipsim_python_bin=/usr/bin/python3.11 -nvlc_chipsim_user_options=--ignore_llu_mloop -nvlc_cs_fec_dumps_path=/opt/pelican -nvlc_chipsim_base_path=/opt -nvlc_use_netir_chipsim -nvlink_datapath_to_nvlc -throttle_nvsim1_threads -floorsweep=sysltc_enable:0x1:chi_over_gphy_enable:0x0:nvlc_perlink_enable:0:0x0001:gpc_enable:0x1:gpc_cpc_enable:0:0x1:gpc_tpc_enable:0:0x1:gpc_gfx_enable:0:0x1:fbp_enable:0x1:fbio_enable:0xf:nvenc_enable:0x0:nvdec_enable:0x0:syspipe_enable:0x1:pmu_enable:0x1:fsp_enable:0x1:sec_enable:0x1:gsp_enable:0x1:oobhub_enable:0x1:c2chbi_group_enable:0:0x0:c2chbi_group_enable:1:0x0:c2chbi_group_enable:2:0x0:c2chbi_group_enable:3:0x0: -p2p_fullstack -disable_video -disable_bsp -disable_vp -disable_mpeg -disable_msenc -noinstance_nvenc -noinstance_nvdec -smAllowUninitializedRegister -BAR1=0x2680000000 -disable_display -mask_sriov_capability sim-terminate-timeout=0 -use_gen6 -lts_dram_capacity=2 -fmod_hiearchy_provides_die_id -fullstack_sim -xalep2fb_en -mem_path_gen6 -sys_coh_type_io_coh -temp_enable_fbhub_node_ids -upstream_path_gen6 -cxl_mode_en -c2c_disable -disable_priv_level -disable_source_id -nvlpw_rlw_csl_assertions_instead_of_errors -noGfxUnitsRegs -nvlc_msetp_message_track -nvlc_fmod_seed=0 -nvlpw_rlw_rsp_collapse_disable -nvlc_delay_after_msetp=100 -nvlc_fmod2cs_traffic_throttle=100 -texHandleErrorsLikeRTL -event_cover=1 -smTrapStateChangeCheckInterval=10000 -noinstance_ofa -noinstance_nvjpg -noinstance_display -noinstance_devices=gr1,gr2,gr3,gr4,gr5,gr6,gr7 -use_bdf_value=0x100 -sriov_BDFShiftSizeInSysmemAddr=56 -disable_ats_backdoor -fsf_mode -fslib_mode_disable -mmu_frontdoor_iodie -drop_pmgr_pri_accesses -mux_sel_from_sys_ctrl -fs2all_cehub_disable=0xFF -sxbar1_cehub_id=0:1:2:3 -sxbar0_cehub_id=99:99:99:99 -hxbar1_cehub_id=99:99:99 -hxbar0_cehub_id=99:99:99 -opt_enable_lce_pce_via_mss -pce_connected_to_cehub -fc_ltc_slice_run_loop -frontdoor_soc_path=1 -gpu_instance=0 -ioctrl_gpu_num=0 -nvlc_chipsim_vbios_file=/root/host-shared/mse_dump/test_mse_load_guid0_F0F0F0F0_guid1_F1F1F1F1_moduleid_0_multi_node_tray_0_bidir.init_vector.dump -chipPOR=fn100"
+}
+
+#RM load Regkey:
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1'
+
+
+RM driver:
+http://dvstransfer.nvidia.com/dvsshare/dvs-binaries-auto1/gpu_drv_chips_Debug_Linux_aarch64_unix-build_Driver/SW_38660224.0_gpu_drv_chips_Debug_Linux_aarch64_unix-build_Driver.tgz
+
+Error symptom:
+GPU Fmod PMU ebreak ...
+
+
+
+RM team suggest: (https://nvidia.atlassian.net/wiki/spaces/FeynmanSW/pages/3690521901/SCSIM+T414+R1.5)
+
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
+
+## For R1.5, GPU fmodel was generated at HW CL - 103141050, SW CL 38463701
+
+Old version RM driver:
+http://dvstransfer.nvidia.com/dvsshare/dvs-binaries/gpu_drv_chips_Debug_Linux_aarch64_unix-build_Driver/SW_38467787.0_gpu_drv_chips_Debug_Linux_aarch64_unix-build_Driver.tgz
+
+Old version GPU fn102 model:
+/home/fsf/fmodel/fn102/Linux_x86_64/103144419/
+
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1'
+============================================================
+ Rosa guest setup
+  VBIOS_FILE_PATH       = /root/host-shared/fn100_sim_hbm4.rom
+  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1
+============================================================
+[1/3] Disabling Init on Probe and nvidia-drm in /etc/modprobe.d/nvidia.conf
+      'options nvidia-drm modeset=0' already present, skipping
+      'options nvidia NVreg_GpuInitOnProbe=0' already present, skipping
+[2/3] Removing old NVIDIA kernel modules
+      nvidia_drm not loaded, skipping
+      nvidia_modeset not loaded, skipping
+      rmmod nvidia_uvm
+      rmmod nvidia
+      rmmod nvidia_vgpu_vfio
+[3/3] Staging VBIOS and reloading nvidia module
+      copied /root/host-shared/fn100_sim_hbm4.rom -> /lib/firmware/nvidia/fn100_sim_hbm4.rom
+      detected GPU: 0005:02:00.0
+      detected GPU: 0005:82:00.0
+      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1' \
+                       'NVreg_RegistryBinaryFilePerDevice=pci=0005:02:00.0;vbios=fn100_sim_hbm4.rom;pci=0005:82:00.0;vbios=fn100_sim_hbm4.rom' \
+                       NVreg_EnableGpuFirmware=0 NVreg_RmMsg=':'
+============================================================
+ Rosa guest setup complete
+============================================================
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi
+Thu Aug  6 01:23:02 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 620.04                 KMD Version: 620.04        CUDA UMD Version: 13.5     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  Graphics Device                On  |   00000005:02:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+|   1  Graphics Device                On  |   00000005:82:00.0 Off |                  N/A |
+| N/A  ERR!  N/A             N/A  /  N/A  |       0MiB /  24576MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+
+root@ubuntu-L1:/home/nvidia# lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:02:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
+0005:80:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:81:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:82:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
+root@ubuntu-L1:/home/nvidia# lspci -tvnn
+-+-[0005:80]---00.0-[81-82]----00.0-[82]----00.0  NVIDIA Corporation Device [10de:37bf]
+ +-[0005:00]---00.0-[01-02]----00.0-[02]----00.0  NVIDIA Corporation Device [10de:37bf]
+ +-[0002:00]---00.0-[01]----00.0  Intel Corporation Device [8086:0111]
+ +-[0001:00]---00.0-[01]--
+ \-[0000:00]-
+

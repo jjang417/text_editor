@@ -61,7 +61,7 @@ $ sudo bash ~/strata_compute-vera_switch/tap_to_containers_via_docker0.sh c1g2_c
 
  
 
-sudo sh NVIDIA-Linux-aarch64-DVS-internal.run -m=kernel --install-libglvnd -sq --no-drm 
+sudo sh NVIDIA-Linux-aarch64-DVS-internal.run -m=kernel --install-libglvnd -sq --no-drm
 
  
 
