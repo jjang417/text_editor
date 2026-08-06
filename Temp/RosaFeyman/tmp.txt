@@ -248,14 +248,17 @@ root@ubuntu-L1:/home/nvidia# lspci -nn
 0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
 0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
 0005:01:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:01:00.1 Ethernet controller [0200]: Mellanox Technologies Device [15b3:1027]
 0005:02:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
 0005:80:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
 0005:81:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:81:00.1 Ethernet controller [0200]: Mellanox Technologies Device [15b3:1027]
 0005:82:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
 root@ubuntu-L1:/home/nvidia# lspci -tvnn
--+-[0005:80]---00.0-[81-82]----00.0-[82]----00.0  NVIDIA Corporation Device [10de:37bf]
- +-[0005:00]---00.0-[01-02]----00.0-[02]----00.0  NVIDIA Corporation Device [10de:37bf]
+-+-[0005:80]---00.0-[81-82]--+-00.0-[82]----00.0  NVIDIA Corporation Device [10de:37bf]
+ |                           \-00.1  Mellanox Technologies Device [15b3:1027]
+ +-[0005:00]---00.0-[01-02]--+-00.0-[02]----00.0  NVIDIA Corporation Device [10de:37bf]
+ |                           \-00.1  Mellanox Technologies Device [15b3:1027]
  +-[0002:00]---00.0-[01]----00.0  Intel Corporation Device [8086:0111]
  +-[0001:00]---00.0-[01]--
  \-[0000:00]-
-
