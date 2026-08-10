@@ -262,3 +262,211 @@ root@ubuntu-L1:/home/nvidia# lspci -tvnn
  +-[0002:00]---00.0-[01]----00.0  Intel Corporation Device [8086:0111]
  +-[0001:00]---00.0-[01]--
  \-[0000:00]-
+
+
+
+Evidence from RM driver log:
+root@ubuntu-L1:/home/nvidia# dmesg -wH | grep DVSEC3
+[  +0.000500] NVRM: NVIDIA DVSEC3 PDI capability length 0x10 is smaller than expected 0x14
+[  +0.000690] NVRM: NVIDIA DVSEC3 PDI capability length 0x10 is smaller than expected 0x14
+
+
+
+CUDA deviceQuery test fail on GPU 1:
+
+GPU 0 and GPU 1 has the same UUID because RM driver cannot get GPU PCIe DVSEC3 PDI capability for generating unique UUID for each CPU.
+
+RmGetGpuUuidRaw()
+    -> if cached UUID exists: return cached
+    -> if DVSEC3 capability found:
+         -> read PDI from NVIDIA DVSEC3          <-- nv_pci_read_gpu_pdi_from_dvsec()
+         -> reject invalid PDI values
+         -> chipId = decodePmcBoot42ChipId(pNv->pmc_boot_42)
+         -> nvGenerateGpuUuid(chipId, pdi64, &uuid)
+         -> cache UUID
+    -> pciPbiReadUuid() fallback
+    -> gpuGetGidInfo() fallback when pGpu is initialized. Then each GPU use the same UUID as fallback value.
+
+
+
+
+How RM driver found the GPU fmod DVSEC3 PDI capability length is too short 0x10 < expected 0x14 ....
+
+nv-pci.c:2111–2118:
+
+      /* Verify the DVSEC length. */
+      if (dvsec_length < NV_PCI_DVSEC_GPU_PDI_CAP_LEN)
+      {
+          nv_printf(NV_DBG_ERRORS,
+                    "NVRM: NVIDIA DVSEC3 PDI capability length 0x%x is smaller than expected 0x%x\n",
+                    dvsec_length, NV_PCI_DVSEC_GPU_PDI_CAP_LEN);
+          return NV_ERR_INVALID_DATA;
+      }
+
+common/inc/nv-pci.h:
+  #define NV_PCI_DVSEC_VENDOR_ID(hdr1)        ((hdr1) & 0xffff)
+  #define NV_PCI_DVSEC_LEN(hdr1)              (((hdr1) & 0xfff00000) >> 20)
+  #define NV_PCI_DVSEC_DESIGNATED_ID(hdr2)    ((hdr2) & 0xffff)
+  #define NV_PCI_DVSEC_NVIDIA_VENDOR_ID       0x10de
+  #define NV_PCI_DVSEC_GPU_PDI_DESIGNATED_ID  0x3
+  #define NV_PCI_DVSEC_GPU_PDI_CAP_LEN        0x14
+  #define NV_PCI_DVSEC_GPU_PDI_LOW_OFFSET     0xc
+  #define NV_PCI_DVSEC_GPU_PDI_HIGH_OFFSET    0x10
+
+
+Reading the PDI — nv-pci.c:2129–2163
+
+  rc = pci_read_config_dword(pdev,
+                             (dvsec_offset + NV_PCI_DVSEC_GPU_PDI_LOW_OFFSET),   /* +0xc  */
+                             &pdi_low);
+  if (rc != 0) { ... "Failed to read PDI low DWORD ..."  ; return NV_ERR_INVALID_READ; }
+
+  rc = pci_read_config_dword(pdev,
+                             (dvsec_offset + NV_PCI_DVSEC_GPU_PDI_HIGH_OFFSET),  /* +0x10 */
+                             &pdi_high);
+  if (rc != 0) { ... "Failed to read PDI high DWORD ..." ; return NV_ERR_INVALID_READ; }
+
+  pdi_value = (((u64)pdi_high) << 32) | (u64)pdi_low;
+
+  /* Validate the PDI. */
+  if ((pdi_value == 0) || (pdi_value == NV_U64_MAX))
+  {
+      nv_printf(NV_DBG_ERRORS,
+                "NVRM: Invalid PDI value 0x%llx found in NVIDIA DVSEC3\n", pdi_value);
+      return NV_ERR_NOT_SUPPORTED;
+  }
+
+  *pdi = pdi_value;
+  return NV_OK;
+
+
+
+[GPU fmod HW register access issue]
+
+ ┌──────────────────┬───────────────────┬─────────────────┬──────┐
+  │      Offset      │ 103144419 (prior) │ 104543503 (now) │      │
+  ├──────────────────┼───────────────────┼─────────────────┼──────┤
+  │ 0xba8 DVSEC hdr1 │ 0x010010DE        │ 0x010010DE      │ same │
+  ├──────────────────┼───────────────────┼─────────────────┼──────┤
+  │ 0xbb0 PDI low    │ 0x00000000        │ 0x00000000      │ same │
+  ├──────────────────┼───────────────────┼─────────────────┼──────┤
+  │ 0xbb4 PDI high   │ 0xDEADBEEF        │ 0xDEADBEEF      │ same │
+  └──────────────────┴───────────────────┴─────────────────┴──────┘
+
+root@ubuntu-L1:/home/nvidia# lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:02:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
+0005:80:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:81:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:82:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
+root@ubuntu-L1:/home/nvidia# sudo sh /root/host-shared/walk_dvsec_ecam.sh 0005:02:00.0
+0005:02:00.0   ECAM 0x804000200000   (kernel sees 256 bytes of config space -- setpci/lspci CANNOT reach ext cfg)
+  DVSEC ID 3 found at cap offset 0xba4
+    vendor 0x10de  rev 0  length 0x010   <-- MISMATCH, spec requires 0x014
+      +0000  0x804000200ba4  0x00010023      cap header
+      +0x04  0x804000200ba8  0x010010DE      DVSEC hdr1  (vendor/rev/length)
+      +0x08  0x804000200bac  0x00000003      DVSEC hdr2  (designated ID)
+      +0x0c  0x804000200bb0  0x00000000      PDI low
+      +0x10  0x804000200bb4  0xDEADBEEF      PDI high <-- BEYOND declared length
+      +0x14  0x804000200bb8  0xDEADBEEF      <-- BEYOND declared length
+    PDI = 0xDEADBEEF:0xDEADBEEF
+
+root@ubuntu-L1:/home/nvidia# sudo sh /root/host-shared/walk_dvsec_ecam.sh 0005:82:00.0
+0005:82:00.0   ECAM 0x804008200000   (kernel sees 256 bytes of config space -- setpci/lspci CANNOT reach ext cfg)
+  DVSEC ID 3 found at cap offset 0xba4
+    vendor 0x10de  rev 0  length 0x010   <-- MISMATCH, spec requires 0x014
+      +0000  0x804008200ba4  0x00010023      cap header
+      +0x04  0x804008200ba8  0x010010DE      DVSEC hdr1  (vendor/rev/length)
+      +0x08  0x804008200bac  0x00000003      DVSEC hdr2  (designated ID)
+      +0x0c  0x804008200bb0  0x00000000      PDI low
+      +0x10  0x804008200bb4  0xDEADBEEF      PDI high <-- BEYOND declared length
+      +0x14  0x804008200bb8  0xDEADBEEF      <-- BEYOND declared length
+    PDI = 0xDEADBEEF:0xDEADBEEF
+
+
+GPU FSA fmod /home/fsf/fmodel/fn102/Linux_x86_64/103144419/ +
+VBIOS https://p4sw-swarm.nvidia.com/files/sw/dev/gpu_drv/chips_a/diag/mods/sim/resources/fn100_sim_hbm4.rom:
+
+root@ubuntu-L1:/home/nvidia# sudo sh /root/host-shared/walk_dvsec_ecam.sh 0005:02:00.0
+0005:02:00.0   ECAM 0x804000200000   (kernel sees 256 bytes of config space -- setpci/lspci CANNOT reach ext cfg)
+  DVSEC ID 3 found at cap offset 0xba4
+    vendor 0x10de  rev 0  length 0x010   <-- MISMATCH, spec requires 0x014
+      +0x00  0x804000200ba4  0x00010023      cap header
+      +0x04  0x804000200ba8  0x010010DE      DVSEC hdr1  (vendor/rev/length)
+      +0x08  0x804000200bac  0x00000003      DVSEC hdr2  (designated ID)
+      +0x0c  0x804000200bb0  0x00000000      PDI low
+      +0x10  0x804000200bb4  0xDEADBEEF      PDI high <-- BEYOND declared length
+      +0x14  0x804000200bb8  0xDEADBEEF      <-- BEYOND declared length
+    PDI = 0xDEADBEEF:0x00000000   <-- unpopulated (0 / 0xDEADBEEF filler)
+
+root@ubuntu-L1:/home/nvidia# sudo sh /root/host-shared/walk_dvsec_ecam.sh 0005:82:00.0
+0005:82:00.0   ECAM 0x804008200000   (kernel sees 256 bytes of config space -- setpci/lspci CANNOT reach ext cfg)
+  DVSEC ID 3 found at cap offset 0xba4
+    vendor 0x10de  rev 0  length 0x010   <-- MISMATCH, spec requires 0x014
+      +0x00  0x804008200ba4  0x00010023      cap header
+      +0x04  0x804008200ba8  0x010010DE      DVSEC hdr1  (vendor/rev/length)
+      +0x08  0x804008200bac  0x00000003      DVSEC hdr2  (designated ID)
+      +0x0c  0x804008200bb0  0x00000000      PDI low
+      +0x10  0x804008200bb4  0xDEADBEEF      PDI high <-- BEYOND declared length
+      +0x14  0x804008200bb8  0xDEADBEEF      <-- BEYOND declared length
+    PDI = 0xDEADBEEF:0x00000000   <-- unpopulated (0 / 0xDEADBEEF filler)
+
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+==============NVSMI LOG==============
+
+Timestamp                                              : Fri Aug  7 10:16:52 2026
+Driver Version                                         : 620.04 [Deprecated; will be removed in CUDA 14.0. Use KMD Version instead]
+CUDA Version                                           : 13.5 [Deprecated; will be removed in CUDA 14.0. Use CUDA UMD Version instead]
+KMD Version                                            : 620.04
+CUDA UMD Version                                       : 13.5
+
+Attached GPUs                                          : 2
+GPU 00000005:02:00.0
+    Product Name                                       : Graphics Device
+    Product Brand                                      : GeForce
+    Product Architecture                               : Feynman
+    Display Mode                                       : Requested functionality has been deprecated
+    Display Attached                                   : No
+    Display Active                                     : Disabled
+    Persistence Mode                                   : Enabled
+    Addressing Mode                                    : None
+    MIG Mode
+        Current                                        : Disabled
+        Pending                                        : Disabled
+    Accounting Mode                                    : Disabled
+    Accounting Mode Buffer Size                        : 4000
+    Driver Model
+        Current                                        : N/A
+        Pending                                        : N/A
+    Serial Number                                      : N/A
+    GPU UUID                                           : GPU-ed3af8ce-9c0d-5dfc-a0f9-05cd60588edb
+    GPU PDI                                            : 0x0
+    Minor Number                                       : 0
+....
+
+GPU 00000005:82:00.0
+    Product Name                                       : Graphics Device
+    Product Brand                                      : GeForce
+    Product Architecture                               : Feynman
+    Display Mode                                       : Requested functionality has been deprecated
+    Display Attached                                   : No
+    Display Active                                     : Disabled
+    Persistence Mode                                   : Enabled
+    Addressing Mode                                    : None
+    MIG Mode
+        Current                                        : Disabled
+        Pending                                        : Disabled
+    Accounting Mode                                    : Disabled
+    Accounting Mode Buffer Size                        : 4000
+    Driver Model
+        Current                                        : N/A
+        Pending                                        : N/A
+    Serial Number                                      : N/A
+    GPU UUID                                           : GPU-ed3af8ce-9c0d-5dfc-a0f9-05cd60588edb
+    GPU PDI                                            : 0x0
+
