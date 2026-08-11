@@ -470,3 +470,46 @@ GPU 00000005:82:00.0
     GPU UUID                                           : GPU-ed3af8ce-9c0d-5dfc-a0f9-05cd60588edb
     GPU PDI                                            : 0x0
 
+
+
+
+                                                                                                                                                                   
+                             Rosa SoC  (TB600 VDK — SCSIM in CT_0_rosa)                                                                                              
+                             PCIe Segment 0005 (C4, bifurcated ×2)                                                                                                   
+                                              │                                                                                                                      
+                        ┌─────────────────────┴─────────────────────┐                                                                                                
+                   Root Port 0                               Root Port 1                                                                                             
+                   0005:00:00.0                              0005:80:00.0                                                                                            
+                   [10de:2f94]                               [10de:2f94]                                                                                             
+                        │ bus 01                                  │ bus 81                                                                                           
+                        ▼                                         ▼                                                                                                  
+              ┌──────────────────┐                     ┌──────────────────┐                                                                                          
+              │  TCX10 BRIDGE    │                     │  TCX10 BRIDGE    │                                                                                          
+              │  0005:01:00.0    │                     │  0005:81:00.0    │                                                                                          
+              │  [15b3:2102]     │                     │  [15b3:2102]     │                                                                                          
+              │  pri=01 sec=02   │                     │  pri=81 sec=82   │                                                                                          
+              ├──────────────────┤                     ├──────────────────┤                                                                                          
+              │  CX10 NIC fn1    │                     │  CX10 NIC fn1    │                                                                                          
+              │  0005:01:00.1    ├────── UDP tunnel ───┤  0005:81:00.1    │                                                                                          
+              │  [15b3:1027]     │  192.168.100.0/24   │  [15b3:1027]     │                                                                                                 
+              │  Ethernet        │    port 2 (0% loss) │  Ethernet        │                                                                                          
+              └────────┬─────────┘                     └────────┬─────────┘                                                                                          
+                       │ bus 02                                  │ bus 82                                                                                            
+                       ▼                                         ▼                                                                                                   
+              ┌──────────────────┐                     ┌──────────────────┐                                                                                          
+              │      GPU0        │                     │      GPU1        │                                                                                          
+              │  0005:02:00.0    │                     │  0005:82:00.0    │                                                                                          
+              │  [10de:37bf]     │                     │  [10de:37bf]     │                                                                                          
+              │  3D controller   │                     │  3D controller   │                                                                                          
+              └──────────────────┘                     └──────────────────┘                                                                                          
+                                                                                                                                                                     
+ Other segments (SoC infrastructure, not GPU/NIC path):                                                                                                              
+   0001:00:00.0  PCI bridge [10de:2f94]   — additional SoC root port                                                                                                 
+   0002:00:00.0  PCI bridge [10de:2f94]   — NVMe root port                                                                                                           
+   0002:01:00.0  NVMe ctrl  [8086:0111]   — guest boot/storage disk                                                                                                  
+                                                                                                                                                                     
+ sim process map:                                                                                                                                                    
+   bridge+NIC = DevProc in cx_nic0 / cx_nic1                                                                                                                         
+                (fn0: 15b3:2102 bridge, fn1: 15b3:1027 NIC endpoint — NIC_FN=true)                                                                                   
+   GPU        = devproc-GPU in CT_0_gpu_0 / CT_0_gpu_1  (north commlib link)                                                                                         
+   root ports/SoC = SCSIM in CT_0_rosa  (south commlib links)                                             
