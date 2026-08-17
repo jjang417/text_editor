@@ -11,3 +11,5 @@
 
 ## Rosa Feynman artifact: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/
 
+## SimX repo: https://nvidia.atlassian.net/wiki/spaces/SW/pages/2899075123/SimX+NIC+Creating+dgx+container
+

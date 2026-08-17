@@ -124,6 +124,32 @@ File: Work/remote_fs/scratch/HW_TREE_NET_Rel3/TB600_tree/hw/nvmobile_tb50x_cmod_
     }
 
 
+## GR152 RM load command:
+
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/vera_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;'
+
+
+┌───────────────────────────────────────────────────────────────────────┬────────────────┬───────────────────────────────────────────────────────────────────────────────────────┐
+  │                              Change Type                              │    Restore     │                                    Required Action                                    │
+  │                                                                       │    Support     │                                                                                       │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ User-space utilities, test tool binaries (CUDA test tools), or debug  │     ✅ Yes     │ Standard restore workflow                                                             │
+  │ scripts                                                               │                │                                                                                       │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ GPU and MSE FW — side-loadable after Guest OS boot                    │ ⚠️ Conditional │ Reload RM or MSE FW according to snapshot status (whether RM or MSE was loaded before │
+  │                                                                       │                │  snapshot)                                                                            │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ CPU Firmware (SBIOS, TF-A, bootloader, NVOS FW)                       │     ❌ No      │ Full cold boot + fresh snapshot creation                                              │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ CPU, GPU, or ChipSim model binary updates                             │     ❌ No      │ Full cold boot + fresh snapshot creation                                              │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ Virtualization layer (QEMU) versioning                                │     ❌ No      │ Full cold boot + fresh snapshot creation                                              │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ Host kernel modifications                                             │     ❌ No      │ Full cold boot + fresh snapshot creation                                              │
+  ├───────────────────────────────────────────────────────────────────────┼────────────────┼───────────────────────────────────────────────────────────────────────────────────────┤
+  │ PCIe hierarchy or topology shifts                                     │     ❌ No      │ Full cold boot + fresh snapshot creation                                              │
+  └───────────────────────────────────────────────────────────────────────┴────────────────┴───────────────────────────────────────────────────────────────────────────────────────┘
+
 
 #iods_disable:0x1 cause the fn102 GPU devproc crash during init process.
 
@@ -147,9 +173,9 @@ Fixed by GPU Devproc.cpp with 64 bit BAR programming.
 
 RM load command:
 
-root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2'
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99'
 
-root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1'
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
 
 Next to try:
 
@@ -167,7 +193,7 @@ root@e40b3e5ff3a4:/app# cat /root/host-shared/custom_config/devproc_fn102_conf_0
 }
 
 #RM load Regkey:
-sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1'
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
 
 
 RM driver:
@@ -190,11 +216,11 @@ http://dvstransfer.nvidia.com/dvsshare/dvs-binaries/gpu_drv_chips_Debug_Linux_aa
 Old version GPU fn102 model:
 /home/fsf/fmodel/fn102/Linux_x86_64/103144419/
 
-root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1'
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
 ============================================================
  Rosa guest setup
   VBIOS_FILE_PATH       = /root/host-shared/fn100_sim_hbm4.rom
-  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1
+  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1
 ============================================================
 [1/3] Disabling Init on Probe and nvidia-drm in /etc/modprobe.d/nvidia.conf
       'options nvidia-drm modeset=0' already present, skipping
@@ -209,7 +235,7 @@ root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RM
       copied /root/host-shared/fn100_sim_hbm4.rom -> /lib/firmware/nvidia/fn100_sim_hbm4.rom
       detected GPU: 0005:02:00.0
       detected GPU: 0005:82:00.0
-      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1' \
+      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1' \
                        'NVreg_RegistryBinaryFilePerDevice=pci=0005:02:00.0;vbios=fn100_sim_hbm4.rom;pci=0005:82:00.0;vbios=fn100_sim_hbm4.rom' \
                        NVreg_EnableGpuFirmware=0 NVreg_RmMsg=':'
 ============================================================
@@ -391,6 +417,8 @@ root@ubuntu-L1:/home/nvidia# sudo sh /root/host-shared/walk_dvsec_ecam.sh 0005:8
 GPU FSA fmod /home/fsf/fmodel/fn102/Linux_x86_64/103144419/ +
 VBIOS https://p4sw-swarm.nvidia.com/files/sw/dev/gpu_drv/chips_a/diag/mods/sim/resources/fn100_sim_hbm4.rom:
 
+chip_hw version: https://p4sw-swarm.nvidia.com/files/sw/dev/gpu_drv/chips_hw/diag/mods/sim/resources/fn100_sim_hbm4.rom
+
 root@ubuntu-L1:/home/nvidia# sudo sh /root/host-shared/walk_dvsec_ecam.sh 0005:02:00.0
 0005:02:00.0   ECAM 0x804000200000   (kernel sees 256 bytes of config space -- setpci/lspci CANNOT reach ext cfg)
   DVSEC ID 3 found at cap offset 0xba4
@@ -513,3 +541,21 @@ GPU 00000005:82:00.0
                 (fn0: 15b3:2102 bridge, fn1: 15b3:1027 NIC endpoint — NIC_FN=true)                                                                                   
    GPU        = devproc-GPU in CT_0_gpu_0 / CT_0_gpu_1  (north commlib link)                                                                                         
    root ports/SoC = SCSIM in CT_0_rosa  (south commlib links)                                             
+
+
+
+## New combination to try
+
+Fn102 GPU fmod: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/gpu-fmodel/104879655/build.tgz
+Fn102 GPU docker image: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/gpu_docker_img_fn102-104879655.tgz
+
+
+VBIOS: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/vbios/38599228/fn100_sim_hbm4.rom
+
+RM driver: http://dvstransfer.nvidia.com/dvsshare/dvs-binaries/gpu_drv_chips_Debug_Linux_aarch64_unix-build_Driver/SW_38689748.0_gpu_drv_chips_Debug_Linux_aarch64_unix-build_Driver.tgz
+Guest image: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/guest-images/HGX-L1-GUEST_ROSA_62010.img.tar.gz
+
+bash runs/rf_c1g2n2/deploy.sh \
+  --set SCSIM_PLATFORM=rosa \
+  --set GPU_PLATFORM=fn102 \
+  --tests acos_uvm_bypass
