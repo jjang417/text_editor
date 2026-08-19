@@ -13,3 +13,50 @@
 
 ## SimX repo: https://nvidia.atlassian.net/wiki/spaces/SW/pages/2899075123/SimX+NIC+Creating+dgx+container
 
+## Boot loader patch:
+    * https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3631533
+    * PCIe C4 LIC IRQ enable:
+        diff --git a/src/t41x_plat_config.c b/src/t41x_plat_config.c
+        index 5db5b94..6f75653 100644
+        --- a/src/t41x_plat_config.c
+        +++ b/src/t41x_plat_config.c
+        @@ -1766,6 +1766,18 @@ static const lic_intr_t ccplex_intr_configs[] = {
+                {NV_ADDRESS_MAP_SYSTEM_0_LIC_IN_S_TOP_BASE, INTR_CTLR_ICR_FLV1_ICR_0_0,
+                        NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP0_INTD_INTR_ID,
+                        NV_IMAP_CCPLEX_GIC_CHI_BRIDGE21_IRQ_RP0_INTD_LIC_OUT_ID},
+        +        /* PCIe C4: RP1_INTA */
+        +        {NV_ADDRESS_MAP_SYSTEM_0_LIC_IN_S_TOP_BASE, INTR_CTLR_ICR_FLV1_ICR_0_0,
+        +                NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP1_INTA_INTR_ID,
+        +                NV_IMAP_CCPLEX_GIC_CHI_BRIDGE21_IRQ_RP1_INTA_LIC_OUT_ID},
+        +        /* PCIe C4: RP2_INTA */
+        +        {NV_ADDRESS_MAP_SYSTEM_0_LIC_IN_S_TOP_BASE, INTR_CTLR_ICR_FLV1_ICR_0_0,
+        +                NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP2_INTA_INTR_ID,
+        +                NV_IMAP_CCPLEX_GIC_CHI_BRIDGE21_IRQ_RP2_INTA_LIC_OUT_ID},
+        +        /* PCIe C4: RP3_INTA */
+        +        {NV_ADDRESS_MAP_SYSTEM_0_LIC_IN_S_TOP_BASE, INTR_CTLR_ICR_FLV1_ICR_0_0,
+        +                NV_ADDRESS_MAP_CHI_BRIDGE21_IRQ_RP3_INTA_INTR_ID,
+        +                NV_IMAP_CCPLEX_GIC_CHI_BRIDGE21_IRQ_RP3_INTA_LIC_OUT_ID},
+                /* PCIe C5: RP0_INTA */
+                {NV_ADDRESS_MAP_SYSTEM_0_LIC_IN_S_TOP_BASE, INTR_CTLR_ICR_FLV1_ICR_0_0,
+                        NV_ADDRESS_MAP_CHI_BRIDGE30_IRQ_RP0_INTA_INTR_ID,
+    * Increase PCIe C4 RP number
+    diff --git a/include/btw/t41x_plat_config.h b/include/btw/t41x_plat_config.h
+    index 9795606..e2d2ab3 100644
+    --- a/include/btw/t41x_plat_config.h
+    +++ b/include/btw/t41x_plat_config.h
+    @@ -121,7 +121,7 @@ static inline uint32_t t41x_package_bitmap(void)
+    #define TB500_PCIE_C3_BIFUR_RP_CNT (1)
+    #endif
+    #ifndef TB500_PCIE_C4_BIFUR_RP_CNT
+    -#define TB500_PCIE_C4_BIFUR_RP_CNT (1)
+    +#define TB500_PCIE_C4_BIFUR_RP_CNT (2)
+    #endif
+    #ifndef TB500_PCIE_C5_BIFUR_RP_CNT
+    #define TB500_PCIE_C5_BIFUR_RP_CNT (1)
+
+## UEFI patch:
+    * https://git-master.nvidia.com/r/c/tegra/bootloader/uefi/edk2-nvidia-tb500/+/3631534
+
+## SCSIM TB600 patch for C2C frontdoor path: https://p4hw-swarm.nvidia.com/reviews/105638821?v=1
+    - hotfix libs @ https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/scsim/c2c_hotfix_lib/
+
