@@ -1267,6 +1267,36 @@ Aug 19 01:38:27 ubuntu-L1 kernel: NVRM: GPU1 kceMapPceLceForC2C_GB100: C2C CE Ma
   root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=*ClientAllocTSG/ChannelTest.ChannelAlloc_NonStallGrIntr_Interleaved/0 -v
 
 
+
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RmAllowIncompatibleHwSwVersion=1'
+============================================================
+ Rosa guest setup
+  VBIOS_FILE_PATH       = /root/host-shared/fn100_sim_hbm4.rom
+  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RmAllowIncompatibleHwSwVersion=1
+============================================================
+[1/3] Disabling Init on Probe and nvidia-drm in /etc/modprobe.d/nvidia.conf
+      'options nvidia-drm modeset=0' already present, skipping
+      'options nvidia NVreg_GpuInitOnProbe=0' already present, skipping
+[2/3] Removing old NVIDIA kernel modules
+      nvidia_drm not loaded, skipping
+      nvidia_modeset not loaded, skipping
+      nvidia_uvm not loaded, skipping
+      rmmod nvidia
+      rmmod nvidia_vgpu_vfio
+[3/3] Staging VBIOS and reloading nvidia module
+      copied /root/host-shared/fn100_sim_hbm4.rom -> /lib/firmware/nvidia/fn100_sim_hbm4.rom
+      detected GPU: 0005:02:00.0
+      detected GPU: 0005:82:00.0
+      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RmAllowIncompatibleHwSwVersion=1' \
+                       'NVreg_RegistryBinaryFilePerDevice=pci=0005:02:00.0;vbios=fn100_sim_hbm4.rom;pci=0005:82:00.0;vbios=fn100_sim_hbm4.rom' \
+                       NVreg_EnableGpuFirmware=0 NVreg_RmMsg=':'
+============================================================
+ Rosa guest setup complete
+============================================================
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+
 root@ubuntu-L1:/home/nvidia/RM/tests-Linux-aarch64/resman# ./channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
 Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 [==========] Running 1 test from 1 test suite.
@@ -1283,3 +1313,40 @@ pending on GPU CE no actions ....
 
 ## ssh command to get Guest OS kernel log
 sshpass -p nvidia ssh -t -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null nvidia@172.17.0.100 'sudo -n journalctl -kf'
+
+
+
+## busybox test command
+nvidia@pset$ sudo -s
+root@pset$ busybox devmem 0x200000000000 32
+0x00000000
+root@pset$ busybox devmem 0x200000000000 32 0x5a
+root@pset$ busybox devmem 0x200000000000 32
+0x0000005A
+
+
+
+==============NVSMI LOG==============
+
+Timestamp                                              : Wed Aug 19 00:35:09 2026
+Driver Version                                         : 620.10 [Deprecated; will be removed in CUDA 14.0. Use KMD Version instead]
+CUDA Version                                           : 13.5 [Deprecated; will be removed in CUDA 14.0. Use CUDA UMD Version instead]
+KMD Version                                            : 620.10
+CUDA UMD Version                                       : 13.5
+
+Attached GPUs                                          : 2
+GPU 00000005:02:00.0
+    Product Name                                       : Graphics Device
+    Product Brand                                      : GeForce
+    Product Architecture                               : Feynman
+…
+    GPU C2C Mode                                       : Enabled
+…
+GPU 00000005:82:00.0
+    Product Name                                       : Graphics Device
+    Product Brand                                      : GeForce
+    Product Architecture                               : Feynman
+    ….
+     GPU C2C Mode                                       : Enabled
+    …..
+
