@@ -1,0 +1,192 @@
+
+
+
+root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+....
+pending on GPU CE no actions ....
+
+
+
+GPU log:
+
+PERTURE_LOCAL_MEM(0)
+Debug(80): [ nvclk=37346320 mmu mmubind mmuGolden.cpp 5318 ] MMUBind engine: 0x56 fromHub: 0x1 PDB: 0x800 HPDB: 0x100000001, TEX REPLAYABLE: 0x0, GCC REPLAYABLE: 0x0
+Debug(80): [ nvclk=37346322 mmu mmubind mmuGolden.cpp 4923 ] Bind Request received with engine_id= FB_IDX_HOST1(86), smc_id= 0, gfid= 0, instanceBlockPointer= 0x30000, Aperture= APERTURE_LOCAL_MEM(0)
+Debug(80): [ nvclk=37346322 mmu mmubind mmuGolden.cpp 5318 ] MMUBind engine: 0x56 fromHub: 0x1 PDB: 0x800 HPDB: 0x100000001, TEX REPLAYABLE: 0x0, GCC REPLAYABLE: 0x0
+Warning: [ nvclk=37346348 host host_pbdma:host_chsw pbdma.cpp 1008 ] Pbdma [ runlist: ce2, pbdma: 0] PbdmaScheduler::loadRamfc: WARNING: chid 0 RAMFC signature 0xface is deprecated (it should be used for transitions only); SIGNATURE_HW should be Host method class ID 0xcc6f.
+Info: [ nvclk=37346355 mmu . mmuPageTableV3.cpp 151 ] MMU Fault: PDE2 invalid aperture and not sparse. This generally indicates the page table is not set up, or the engine is bound to the wrong page table. MMU team likely unable to be able to help with this error.
+Debug(80): [ nvclk=37346355 mmu mmu_faults mmuGolden.cpp 5985 ] Setting engine fault flag: engine=86, tlb_type=1, tlb_instance=0, node_id=96
+Info: [ nvclk=37346355 mmu . mmuGolden.cpp 7427 ] #925737 setting sticky NACK: fault_type FAULT_PDE(0), node NODE_HUB(96), unit UNIT_ESC(99), debug_enabled 0
+Info: [ nvclk=37346355 mmu . mmuGolden.cpp 1740 ] **** MMU Fault Detected! **** see req, resp and fault info below. More specific message may be above,VA=0xfffffff000, Fault type=FAULT_PDE(0), EngineId=FB_IDX_HOST1(86), NodeID=NODE_HUB(96), UnitID=UNIT_ESC(99),  SMC=0, GFID=0
+Info: [ nvclk=37346355 mmu . mmuGolden.cpp 1749 ] **** MMU Fault Access req  info  : req=[vadr=0xfffffff0; reqType=eVirtual_rd_cmd(0); gfid=0; tlb_source.type=1; nvlink_gfid=0; mask=0x0; subid=0x24; vc=VC_BLOCKING(1); client_id=UNIT_ESC(99); engine_id=FB_IDX_HOST1(86); sys_membar=0; spa=0; ]; 
+Info: [ nvclk=37346355 mmu . mmuGolden.cpp 1750 ] **** MMU Fault Access resp info  : resp=[padr=0x00000000; aperture=APERTURE_LOCAL_MEM(0); kind=0x0; faultType=FAULT_PDE(0); peer_id=0; page_size=4096; dst_node_id=NODE_GPC_0(0); dst_unit_id=UNIT_T1_2(2); dst_port_id=PORT0(0); sparse_access=0; use_standard_for_concat_pkt=0; atomic_handling=0; ats=0; l2_bypass=0; mmio=0; replayable=0; debug_enabled=0; ordered_wr_pcie=0; ]; 
+Info: [ nvclk=37346355 mmu . mmuGolden.cpp 1751 ] **** MMU Fault Access reason(s)  : 
+Debug(80): [ nvclk=37346355 mmu mmu_faults mmuGolden.cpp 5786 ] Checked fault reported flag for engine 86, value: 0 
+Debug(80): [ nvclk=37346355 mmu mmu_faults mmuGolden.cpp 5789 ] Setting engine fault reported flag for engine 86 
+Debug(80): [ nvclk=37346355 mmu mmu_faults mmuGolden.cpp 5694 ] #0: checking sticky NACK for engine: 320, node 96, unit 10, faulted: 0, tlb_type: 0, tlb_instance: 0, node_id: 0
+
+1. The write we caught earlier (nvclk=15961771/15963794, write data payload addr=0x200000030000 be=0xff data=0x0) — be=0xff is the correct, full 8-byte enable, not a clobbered/synthesized mask. This rules out the [BE-FIX-v1]-related hypothesis from your memory ("old code synthesized a contiguous byte-enable... widening partial-dword stores and clobbering sibling bytes"). The byte-enable mechanics are working correctly.
+2. The MMUBind you just pasted (nvclk=37346320) reads back exactly what was written: PDB: 0x800 — flags-only (0x800 = bit 11, BIG_PAGE_SIZE), zero address bits. instanceBlockPointer=0x30000 confirms this is the same HOST1 instance block.
+3. Fault: PDE2 invalid aperture and not sparse at VA=0xfffffff000, EngineId=FB_IDX_HOST1(86) — same fault class as before (walking a page directory at physical 0), though PDE2 rather than the earlier PDE4 and a different VA (0xfffffff000 vs 0x100000000) — consistent with this being a different specific access, same underlying zero-PDB root cause.
+
+
+SCSIM log:
+
+root@dl325g11-2067:~# docker exec -it CT_0_rosa bash -c "tail -n 200 /opt/scsim/sim.t414/output.VDK_T414_FC_R1_5/simout.txt"
+Debug(55): [ nvclk=16044442 gpu_wrapper . commlib_chi_transactor.cpp 1340 ] callback_rsp_channel DBID received
+Debug(55): [ nvclk=16044442 gpu_wrapper . commlib_chi_transactor.cpp 1369 ] send_write_data_to_gpu() called 
+Debug(55): [ nvclk=16044442 gpu_wrapper . commlib_chi_transactor.cpp 1425 ] write data payload addr=0x2005fe120018 be=0xf000000 data=0x0000000000030000_0000000000000000_0000000000000000_0000000000000000
+Debug(55): [ nvclk=16044442 gpu_wrapper . commlib_chi_transactor.cpp 1427 ] sending non_copy_back_wr_data request on link 0 
+Debug(50): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 2128 ] Received gchi_comp completion response from GPU resp_type=4 resp_err=0
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1351 ] callback_wr_comp_channel Comp received, gpu_wr_err=0
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1362 ] process_write_request_to_gpu() returned addr=0x2005fe120018 bytes=4 resp_status=1
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 174 ] commlib_chi_transactor::b_transport() called 
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 180 ] commlib_chi_transactor received write request from CPU 
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1277 ] process_write_request_to_gpu() called 
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1291 ] send write to address 0x2005fe12001c for bytes 4
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1295 ] aligned address for above request is 0x2005fe120000 for data beats 0
+Debug(40): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 2279 ] AMBA extension AMBA_PV_EXTENSION: length=1 size=4 burst=AMBA_PV_INCR resp=AMBA_PV_INCOMPLETE is_incomplete=1 is_okay=0 is_exokay=0 is_slverr=0 is_decerr=0 is_pass_dirty=0 is_shared=0 is_snoop_data_transfer=0 is_snoop_error=0 is_snoop_was_unique=0 is_response_array_complete=0 id=16384 extended_id=274877906944 is_privileged=1 is_non_secure=1 physical_address_space=AMBA_PV_NON_SECURE_PAS is_instruction=0 is_exclusive=0 is_locked=0 is_bufferable=1 is_cacheable=1 is_read_allocate=1 is_write_allocate=1 is_modifiable=1 is_read_other_allocate=1 is_write_other_allocate=1 is_gathering=0 is_reordering=0 is_transient=0 qos=0 region=0 user=0 snoop_read=AMBA_PV_READ_NO_SNOOP snoop_write=AMBA_PV_WRITE_NO_SNOOP dvm_encoded_transaction=0 dvm_encoded_additional_transaction=0 has_dvm_additional_transaction=0 dvm_address=0 dvm_vmid=0 dvm_vmid_set=0 dvm_asid=0 dvm_asid_set=0 dvm_virtual_index=0 dvm_virtual_index_set=0 dvm_message_type=AMBA_PV_TLB_INVALIDATE dvm_os=AMBA_PV_HYPERVISOR_OR_GUEST dvm_security=AMBA_PV_SECURE_AND_NON_SECURE dvm_tlb_leaf_set=0 dvm_stage=0
+Debug(40): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 2282 ] Extract cca security bits addr=0x2005fe12001c pas=0x1 nse=0
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1311 ] sending write no snoop ptl over link 0 for bytes 4 
+Debug(50): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 2117 ] Received dbid response from GPU resp_type=7 dbid=905
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1340 ] callback_rsp_channel DBID received
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1369 ] send_write_data_to_gpu() called 
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1425 ] write data payload addr=0x2005fe12001c be=0xf0000000 data=0x0000000000000000_0000000000000000_0000000000000000_0000000000000000
+Debug(55): [ nvclk=16044444 gpu_wrapper . commlib_chi_transactor.cpp 1427 ] sending non_copy_back_wr_data request on link 0 
+Debug(50): [ nvclk=16044446 gpu_wrapper . commlib_chi_transactor.cpp 2128 ] Received gchi_comp completion response from GPU resp_type=4 resp_err=0
+Debug(55): [ nvclk=16044446 gpu_wrapper . commlib_chi_transactor.cpp 1351 ] callback_wr_comp_channel Comp received, gpu_wr_err=0
+Debug(55): [ nvclk=16044446 gpu_wrapper . commlib_chi_transactor.cpp 1362 ] process_write_request_to_gpu() returned addr=0x2005fe12001c bytes=4 resp_status=1
+Debug(55): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 174 ] commlib_chi_transactor::b_transport() called 
+Debug(55): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 177 ] commlib_chi_transactor received read request from CPU 
+Debug(55): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 1186 ] process_read_request_to_gpu() called 
+Debug(55): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 1197 ] requested read from address 0x200000020088 of size 4
+Debug(55): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 1198 ] aligned address for this request is 0x200000020080 requested_read_data_beats are 1
+Debug(40): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 2279 ] AMBA extension AMBA_PV_EXTENSION: length=1 size=4 burst=AMBA_PV_INCR resp=AMBA_PV_INCOMPLETE is_incomplete=1 is_okay=0 is_exokay=0 is_slverr=0 is_decerr=0 is_pass_dirty=0 is_shared=0 is_snoop_data_transfer=0 is_snoop_error=0 is_snoop_was_unique=0 is_response_array_complete=0 id=16384 extended_id=274877906944 is_privileged=0 is_non_secure=1 physical_address_space=AMBA_PV_NON_SECURE_PAS is_instruction=0 is_exclusive=0 is_locked=0 is_bufferable=1 is_cacheable=1 is_read_allocate=1 is_write_allocate=1 is_modifiable=1 is_read_other_allocate=1 is_write_other_allocate=1 is_gathering=0 is_reordering=0 is_transient=0 qos=0 region=0 user=0 snoop_read=AMBA_PV_READ_NO_SNOOP snoop_write=AMBA_PV_WRITE_NO_SNOOP dvm_encoded_transaction=0 dvm_encoded_additional_transaction=0 has_dvm_additional_transaction=0 dvm_address=0 dvm_vmid=0 dvm_vmid_set=0 dvm_asid=0 dvm_asid_set=0 dvm_virtual_index=0 dvm_virtual_index_set=0 dvm_message_type=AMBA_PV_TLB_INVALIDATE dvm_os=AMBA_PV_HYPERVISOR_OR_GUEST dvm_security=AMBA_PV_SECURE_AND_NON_SECURE dvm_tlb_leaf_set=0 dvm_stage=0
+Debug(40): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 2282 ] Extract cca security bits addr=0x200000020088 pas=0x1 nse=0
+Debug(55): [ nvclk=16044486 gpu_wrapper . commlib_chi_transactor.cpp 1226 ] sending read no snoop over link 0 
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 309 ] commlib_gpu2soc_memory_data() called (inst = 0)
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1447 ] get_rd_data() called 
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 0 is 0
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 1 is 0
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 2 is 0
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 3 is 0
+Debug(50): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1464 ] Collected all the read data, signalling consumer
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1235 ] read data payload addr=0x200000020088 bytes=4 data=0x0000000000000000_0000000000000000_0000000000000000_0000000000000000
+Debug(55): [ nvclk=16044489 gpu_wrapper . commlib_chi_transactor.cpp 1246 ] process_read_request_to_gpu() returned addr=0x200000020088 bytes=4 gpu_rd_err=0
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 174 ] commlib_chi_transactor::b_transport() called 
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 180 ] commlib_chi_transactor received write request from CPU 
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1277 ] process_write_request_to_gpu() called 
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1291 ] send write to address 0x20000002008c for bytes 4
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1295 ] aligned address for above request is 0x200000020080 for data beats 0
+Debug(40): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 2279 ] AMBA extension AMBA_PV_EXTENSION: length=1 size=4 burst=AMBA_PV_INCR resp=AMBA_PV_INCOMPLETE is_incomplete=1 is_okay=0 is_exokay=0 is_slverr=0 is_decerr=0 is_pass_dirty=0 is_shared=0 is_snoop_data_transfer=0 is_snoop_error=0 is_snoop_was_unique=0 is_response_array_complete=0 id=16384 extended_id=274877906944 is_privileged=0 is_non_secure=1 physical_address_space=AMBA_PV_NON_SECURE_PAS is_instruction=0 is_exclusive=0 is_locked=0 is_bufferable=1 is_cacheable=1 is_read_allocate=1 is_write_allocate=1 is_modifiable=1 is_read_other_allocate=1 is_write_other_allocate=1 is_gathering=0 is_reordering=0 is_transient=0 qos=0 region=0 user=0 snoop_read=AMBA_PV_READ_NO_SNOOP snoop_write=AMBA_PV_WRITE_NO_SNOOP dvm_encoded_transaction=0 dvm_encoded_additional_transaction=0 has_dvm_additional_transaction=0 dvm_address=0 dvm_vmid=0 dvm_vmid_set=0 dvm_asid=0 dvm_asid_set=0 dvm_virtual_index=0 dvm_virtual_index_set=0 dvm_message_type=AMBA_PV_TLB_INVALIDATE dvm_os=AMBA_PV_HYPERVISOR_OR_GUEST dvm_security=AMBA_PV_SECURE_AND_NON_SECURE dvm_tlb_leaf_set=0 dvm_stage=0
+Debug(40): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 2282 ] Extract cca security bits addr=0x20000002008c pas=0x1 nse=0
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1311 ] sending write no snoop ptl over link 0 for bytes 4 
+Debug(50): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 2117 ] Received dbid response from GPU resp_type=7 dbid=906
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1340 ] callback_rsp_channel DBID received
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1369 ] send_write_data_to_gpu() called 
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1425 ] write data payload addr=0x20000002008c be=0xf000 data=0x0000000000000000_0000000000000000_0000000100000000_0000000000000000
+Debug(55): [ nvclk=16044492 gpu_wrapper . commlib_chi_transactor.cpp 1427 ] sending non_copy_back_wr_data request on link 0 
+Debug(50): [ nvclk=16044494 gpu_wrapper . commlib_chi_transactor.cpp 2128 ] Received gchi_comp completion response from GPU resp_type=4 resp_err=0
+Debug(55): [ nvclk=16044494 gpu_wrapper . commlib_chi_transactor.cpp 1351 ] callback_wr_comp_channel Comp received, gpu_wr_err=0
+Debug(55): [ nvclk=16044494 gpu_wrapper . commlib_chi_transactor.cpp 1362 ] process_write_request_to_gpu() returned addr=0x20000002008c bytes=4 resp_status=1
+Debug(55): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 174 ] commlib_chi_transactor::b_transport() called 
+Debug(55): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 177 ] commlib_chi_transactor received read request from CPU 
+Debug(55): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 1186 ] process_read_request_to_gpu() called 
+Debug(55): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 1197 ] requested read from address 0x200000020088 of size 4
+Debug(55): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 1198 ] aligned address for this request is 0x200000020080 requested_read_data_beats are 1
+Debug(40): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 2279 ] AMBA extension AMBA_PV_EXTENSION: length=1 size=4 burst=AMBA_PV_INCR resp=AMBA_PV_INCOMPLETE is_incomplete=1 is_okay=0 is_exokay=0 is_slverr=0 is_decerr=0 is_pass_dirty=0 is_shared=0 is_snoop_data_transfer=0 is_snoop_error=0 is_snoop_was_unique=0 is_response_array_complete=0 id=16384 extended_id=274877906944 is_privileged=0 is_non_secure=1 physical_address_space=AMBA_PV_NON_SECURE_PAS is_instruction=0 is_exclusive=0 is_locked=0 is_bufferable=1 is_cacheable=1 is_read_allocate=1 is_write_allocate=1 is_modifiable=1 is_read_other_allocate=1 is_write_other_allocate=1 is_gathering=0 is_reordering=0 is_transient=0 qos=0 region=0 user=0 snoop_read=AMBA_PV_READ_NO_SNOOP snoop_write=AMBA_PV_WRITE_NO_SNOOP dvm_encoded_transaction=0 dvm_encoded_additional_transaction=0 has_dvm_additional_transaction=0 dvm_address=0 dvm_vmid=0 dvm_vmid_set=0 dvm_asid=0 dvm_asid_set=0 dvm_virtual_index=0 dvm_virtual_index_set=0 dvm_message_type=AMBA_PV_TLB_INVALIDATE dvm_os=AMBA_PV_HYPERVISOR_OR_GUEST dvm_security=AMBA_PV_SECURE_AND_NON_SECURE dvm_tlb_leaf_set=0 dvm_stage=0
+Debug(40): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 2282 ] Extract cca security bits addr=0x200000020088 pas=0x1 nse=0
+Debug(55): [ nvclk=16044506 gpu_wrapper . commlib_chi_transactor.cpp 1226 ] sending read no snoop over link 0 
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 309 ] commlib_gpu2soc_memory_data() called (inst = 0)
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1447 ] get_rd_data() called 
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 0 is 0
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 100000000 :
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 1 is 100000000
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 2 is 0
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1455 ] Read data is 0 :
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1460 ] data stored in rd_array at index 3 is 0
+Debug(50): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1464 ] Collected all the read data, signalling consumer
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1235 ] read data payload addr=0x200000020088 bytes=4 data=0x0000000000000000_0000000000000000_0000000100000000_0000000000000000
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1246 ] process_read_request_to_gpu() returned addr=0x200000020088 bytes=4 gpu_rd_err=0
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 174 ] commlib_chi_transactor::b_transport() called 
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 180 ] commlib_chi_transactor received write request from CPU 
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1277 ] process_write_request_to_gpu() called 
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1291 ] send write to address 0x20000002008c for bytes 4
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1295 ] aligned address for above request is 0x200000020080 for data beats 0
+Debug(40): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 2279 ] AMBA extension AMBA_PV_EXTENSION: length=1 size=4 burst=AMBA_PV_INCR resp=AMBA_PV_INCOMPLETE is_incomplete=1 is_okay=0 is_exokay=0 is_slverr=0 is_decerr=0 is_pass_dirty=0 is_shared=0 is_snoop_data_transfer=0 is_snoop_error=0 is_snoop_was_unique=0 is_response_array_complete=0 id=16384 extended_id=274877906944 is_privileged=0 is_non_secure=1 physical_address_space=AMBA_PV_NON_SECURE_PAS is_instruction=0 is_exclusive=0 is_locked=0 is_bufferable=1 is_cacheable=1 is_read_allocate=1 is_write_allocate=1 is_modifiable=1 is_read_other_allocate=1 is_write_other_allocate=1 is_gathering=0 is_reordering=0 is_transient=0 qos=0 region=0 user=0 snoop_read=AMBA_PV_READ_NO_SNOOP snoop_write=AMBA_PV_WRITE_NO_SNOOP dvm_encoded_transaction=0 dvm_encoded_additional_transaction=0 has_dvm_additional_transaction=0 dvm_address=0 dvm_vmid=0 dvm_vmid_set=0 dvm_asid=0 dvm_asid_set=0 dvm_virtual_index=0 dvm_virtual_index_set=0 dvm_message_type=AMBA_PV_TLB_INVALIDATE dvm_os=AMBA_PV_HYPERVISOR_OR_GUEST dvm_security=AMBA_PV_SECURE_AND_NON_SECURE dvm_tlb_leaf_set=0 dvm_stage=0
+Debug(40): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 2282 ] Extract cca security bits addr=0x20000002008c pas=0x1 nse=0
+Debug(55): [ nvclk=16044509 gpu_wrapper . commlib_chi_transactor.cpp 1311 ] sending write no snoop ptl over link 0 for bytes 4 
+Debug(50): [ nvclk=16044510 gpu_wrapper . commlib_chi_transactor.cpp 2117 ] Received dbid response from GPU resp_type=7 dbid=907
+Debug(55): [ nvclk=16044510 gpu_wrapper . commlib_chi_transactor.cpp 1340 ] callback_rsp_channel DBID received
+Debug(55): [ nvclk=16044510 gpu_wrapper . commlib_chi_transactor.cpp 1369 ] send_write_data_to_gpu() called 
+Debug(55): [ nvclk=16044510 gpu_wrapper . commlib_chi_transactor.cpp 1425 ] write data payload addr=0x20000002008c be=0xf000 data=0x0000000000000000_0000000000000000_0000000200000000_0000000000000000
+Debug(55): [ nvclk=16044510 gpu_wrapper . commlib_chi_transactor.cpp 1427 ] sending non_copy_back_wr_data request on link 0 
+Debug(50): [ nvclk=16044512 gpu_wrapper . commlib_chi_transactor.cpp 2128 ] Received gchi_comp completion response from GPU resp_type=4 resp_err=0
+Debug(55): [ nvclk=16044512 gpu_wrapper . commlib_chi_transactor.cpp 1351 ] callback_wr_comp_channel Comp received, gpu_wr_err=0
+Debug(55): [ nvclk=16044512 gpu_wrapper . commlib_chi_transactor.cpp 1362 ] process_write_request_to_gpu() returned addr=0x20000002008c bytes=4 resp_status=1
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 295 ] commlib_gpu2soc_memory_request() called (inst = 0)
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 350 ] accept_incoming_request() READ routed directly, read_req_queue size=1
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1102 ] send_read_request_to_mc() called 
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1140 ] address=108f58000, size=5, opcode=0, txnId=0, expCompAck=0, order=0
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1141 ] nse 0x0, sec_sid 0x0, addrType 0x3
+Info: [ nvclk=16044514 . . soc_mss_hub_cluster.cpp 467 ] Got data packet on GCHI with address : 0x108f58000, gchi_tee : 'd0, gchi_tee_only : 'd0
+Error  amba_pv::AMBA_PV_SLVERR:W!/home/ip/nvmobile/mss/hub_cluster/1.0/91476827_cmod/ip/mss_hub_cluster_rel/mss_hub_cluster/1.0/cmod/mss_hub_cluster/xchip/soc_dbb.cpp(2192): MC READ ABORTED: cgid=483(), adr=0x0_00000000, validity=NO_VIOLATIONS, req_valid=1, translation_err=1, 32 bytes
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1170 ] Read data is :
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1172 ] ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1479 ] send_CompData() called 
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1490 ] num_beats to send are : 1
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1521 ] CHI_DATA_FLIT is : PKT_gchi_dat_channel_ifc_gchi_comp_data_ID :  txn_id=0x000 resp_err=0x0 resp=0x0 data_id=0x0 data=0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff poison=0x0 pkt_debug=0x0 last=0x1 spare_field=0x0 dbid=0x000 size=0x0 addr4=0x0
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1522 ] sending compData over link9 and beat is 0
+SMMU::Interrupt pin  EVENTQ_IRPT_NS going High
+SMMU::Interrupt pin  EVENTQ_IRPT_NS going Low
+Info: [ nvclk=16044514 . . smmu.cpp 107 ] CMDQV: Getting APB2MSS SMMU_ID:0 request, adr=0x00000000000100a8, is_write=0, wdata=0x00000000, smmu_base : 0x0, smmu_limit: 0x282ffff
+Info: [ nvclk=16044514 . . smmu.cpp 107 ] CMDQV: Getting APB2MSS SMMU_ID:0 request, adr=0x00000000000100ac, is_write=1, wdata=0x00000001, smmu_base : 0x0, smmu_limit: 0x282ffff
+Info: [ nvclk=16044514 . . smmu.cpp 107 ] CMDQV: Getting APB2MSS SMMU_ID:0 request, adr=0x00000000000100a8, is_write=0, wdata=0x00000000, smmu_base : 0x0, smmu_limit: 0x282ffff
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 295 ] commlib_gpu2soc_memory_request() called (inst = 0)
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 366 ] accept_incoming_request() WRITE routed directly, write_req_queue size=1
+Debug(55): [ nvclk=16044514 gpu_wrapper . commlib_chi_transactor.cpp 1583 ] [WR-PAIR-FIX] registered write: dbid=0x0 addr=0x105ad3000 size=0x5 txnId=0x0 beats=1 (outstanding=1)
+I!nic_sc_commlib.cpp(158): NIC_STUB: nic_sc_commlib::nic2lic_intr_req_handler() report NIC IRQ assert instance_num = 0 
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 309 ] commlib_gpu2soc_memory_data() called (inst = 0)
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 1749 ] BYTE_EN is 0xffffffff 
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 1753 ] write data is :
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 1757 ] 0 0 3 0 0 0 0 0 0 f0 ff ff ff 0 0 0 0 0 0 0 0 0 0 0 56 0 0 0 0 63 10 80 
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 1764 ] [WR-PAIR-FIX] dbid=0x0 beat issued, remaining=0
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 1779 ] send_write_request_to_mc() called 
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 1843 ] nse 0x0, sec_sid 0x0, addrType 0x3
+Error  amba_pv::AMBA_PV_SLVERR:W!/home/ip/nvmobile/mss/hub_cluster/1.0/91476827_cmod/ip/mss_hub_cluster_rel/mss_hub_cluster/1.0/cmod/mss_hub_cluster/xchip/soc_dbb.cpp(2387): MC WRITE ABORTED: cgid=484(), adr=0x0_00000000, validity=NO_VIOLATIONS, req_valid=1, translation_err=1, be=ffffffff, 32 bytes
+AssertMsg: [ nvclk=16044515 nvsim nv_report_throw_assert sim_module.cpp 1487 ]  < failed assert is '(0)' > sc_report throw, asserting to print backtrace
+Error: commlib_chi_transactor::send_b_transport: TLM_ADDRESS_ERROR_RESPONSE
+In file: commlib_chi_transactor.cpp:1474
+In process: HARDWARE.NV_TOP.sc_nv_top.sc_nic_commlib_wrapper_c4_0.commlib_chi_transactor.write_data_thread @ 16044329310 ns
+AssertMsg: [ nvclk=16044515 nvsim nv_report_throw_assert sim_module.cpp 1487 ]  # < Stack trace - [stack:1:32:1] (trim_end:show_max:trim_top) - 11 frames pre-trimmed > :
+  # < Warning: non-debug build detected--inlined functions may be omitted and filenames may be wrong >
+  #1      /home/ip/shared/inf/CSL/2.1/SECURED/91927403_r89gcc1330NVIDIA/clib/include/csl.h:377	cslCallObjectWrapper_t::cslEmit()
+  #2      /home/ip/shared/inf/nvsc/RELEASES/nvgpu/7.0/VDK_gcc1330_ROCKY8/95149651p1_vdk_sysc301/clib/nvsim/debug_vdk_Linux_x86_64/sim_module.cpp:1487	nv_report_handler::handler(sc_core::sc_report const&, unsigned int const&)
+  #3      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/libso-gcc-13.3-64/libSnpsVP.so @ 0x7f8c467fa615	sc_core::sc_report_handler::report(sc_core::sc_severity, char const*, char const*, char const*, int)
+  #4      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/nvidia_lib/gcc-13.3.0-64/libtb500_gpu_wrapper_fsim.so @ 0x7f8c7fe50152	scsim::cmod::commlib_chi_transactor::send_b_transport(tlm::tlm_generic_payload*)
+  #5      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/nvidia_lib/gcc-13.3.0-64/libtb500_gpu_wrapper_fsim.so @ 0x7f8c7fe526a4	scsim::cmod::commlib_chi_transactor::send_write_request_to_mc(scsim::cmod::commlib_chi_transactor::DecodedWriteReq const&, unsigned int, unsigned int)
+  #6      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/nvidia_lib/gcc-13.3.0-64/libtb500_gpu_wrapper_fsim.so @ 0x7f8c7fe54f08	scsim::cmod::commlib_chi_transactor::get_wr_data(scsim::cmod::commlib_chi_transactor::DecodedWriteDat const&)
+  #7      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/nvidia_lib/gcc-13.3.0-64/libtb500_gpu_wrapper_fsim.so @ 0x7f8c7fe5555c	scsim::cmod::commlib_chi_transactor::write_data_thread()
+  #8      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/libso-gcc-13.3-64/libSnpsVP.so @ 0x7f8c4670a262	sc_core::sc_thread_cor_fn(void*)
+  #9      /opt/scsim/sim.t414/VDK_T414_FC_R1_5/libso-gcc-13.3-64/libSnpsVP.so @ 0x7f8c469c43ee	snps_start_entry
+Exception raised by sc_start() : Error: commlib_chi_transactor::send_b_transport: TLM_ADDRESS_ERROR_RESPONSE
+In file: commlib_chi_transactor.cpp:1474
+In process: HARDWARE.NV_TOP.sc_nv_top.sc_nic_commlib_wrapper_c4_0.commlib_chi_transactor.write_data_thread @ 16044329310 ns
+Info: [ nvclk=16044515 nv_top . nv_top_wrapper.cpp 272 ] in nv_top_wrapper destructor 
+Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 143 ] commlib_chi_transactor destructor called 
+======================================
+***** NVSC Caught SIGSEGV Signal *****
+***** NOTE: Does not necessarily mean SegFault in NVSC *****
+======================================
+

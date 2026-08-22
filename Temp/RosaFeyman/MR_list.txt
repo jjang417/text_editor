@@ -60,3 +60,4 @@
 ## SCSIM TB600 patch for C2C frontdoor path: https://p4hw-swarm.nvidia.com/reviews/105638821?v=1
     - hotfix libs @ https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/scsim/c2c_hotfix_lib/
 
+## SCSIM commlib_chi_transactor patch: https://p4hw-swarm.nvidia.com/reviews/104612797?v=,2
