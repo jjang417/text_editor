@@ -1,4 +1,4 @@
-
+[Bug] CPU writes a genuine zero address to the HOST1 channel PDB with correct byte-enables, causing a real MMU fault.
 
 
 root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
@@ -190,3 +190,9 @@ Debug(55): [ nvclk=16044515 gpu_wrapper . commlib_chi_transactor.cpp 143 ] comml
 ***** NOTE: Does not necessarily mean SegFault in NVSC *****
 ======================================
 
+
+
+  1. ✅ HOST1 PDB zero-write confirmed (the original bug you set out to find) — CPU writes a genuine zero address to the HOST1 channel PDB with correct byte-enables, causing a real MMU
+     fault. Root cause is on RM's side, not an SCSIM commlib artifact.
+  2. ⚠️ A second, separate crash then killed the sim — an MC translation abort on the c4/NIC-repurposed-as-GPU-C2C transport, hitting two never-before-seen addresses (0x108f58000
+     read, 0x105ad3000 write), likely tied to the incomplete local NIC/ATSD c4 topology work in your memory notes.
