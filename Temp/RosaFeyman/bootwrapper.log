@@ -1,0 +1,11 @@
+root@dl325g11-2067:~/SimX/weaver# docker exec -it CT_0_rosa bash -c "tail -n 3000 /opt/scsim/sim.t414/output.VDK_T414_FC_R1_5/SBSAUart0_tx.log"
+�boot-wrapper] : Initialized IO
+[boot-wrapper] : Package status (PACKAGE_STATUS_0) 0x1, Mdie-bitmap=0xf
+[boot-wrapper] :  Package0 scratch/fuse information, no SMT2 support
+[boot-wrapper] :   CPU fuses: 07ffffff ffffffff fffffffe
+[boot-wrapper] :   CPU: 00000003 ffffffff ffffffff fffffffe
+[boot-wrapper] :   SLC: 00000002 aaa00000 00000000 00001555
+[boot-wrapper] :   PCI: 0000002c
+[boot-wrapper] :   GPU connectivity: GPU0=PCORE4 GPU1=PCORE5, PEX_CONNECTIVITY=0x20011, GRS_GPU_MAP=0x144
+[boot-wrapper] : Hwinc-CL = 93427812
+[boot-wrapper] : Build timestamp Aug 22 2026 20:19:39
