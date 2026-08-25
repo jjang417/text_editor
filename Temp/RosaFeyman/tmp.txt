@@ -1326,35 +1326,7 @@ root@pset$ busybox devmem 0x200000000000 32
 
 
 
-==============NVSMI LOG==============
-
-Timestamp                                              : Wed Aug 19 00:35:09 2026
-Driver Version                                         : 620.10 [Deprecated; will be removed in CUDA 14.0. Use KMD Version instead]
-CUDA Version                                           : 13.5 [Deprecated; will be removed in CUDA 14.0. Use CUDA UMD Version instead]
-KMD Version                                            : 620.10
-CUDA UMD Version                                       : 13.5
-
-Attached GPUs                                          : 2
-GPU 00000005:02:00.0
-    Product Name                                       : Graphics Device
-    Product Brand                                      : GeForce
-    Product Architecture                               : Feynman
-…
-    GPU C2C Mode                                       : Enabled
-…
-GPU 00000005:82:00.0
-    Product Name                                       : Graphics Device
-    Product Brand                                      : GeForce
-    Product Architecture                               : Feynman
-    ….
-     GPU C2C Mode                                       : Enabled
-    …..
-
-
-
 [C2C frontdoort test]
-root@ubuntu-L1:/home/nvidia# sudo dmesg -wH > /root/host-shared/rm_init_$(date +%H%M).log &
-
 root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
 root@ubuntu-L1:/home/nvidia# sudo dmesg -wH
 
@@ -1488,80 +1460,8 @@ root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RM
 ============================================================
  Rosa guest setup complete
 ============================================================
-
-
-
-root@ubuntu-L1:/home/nvidia#  &
-...
-[  +0.000140] NVRM: GPU0 bifC2CConstructAperture_GH100: detected 0 C2C entries in PTOP, max = 2
-[  +0.000020] NVRM: GPU0 bifC2CHBIConstructAperture_GR100: detected 4 C2CHBI entries in PTOP
-[  +0.000010] NVRM: GPU0 bifC2CHBIConstructAperture_GR100: C2CHBI ID 0 : type 0 inst 0 : Pri Base Addr = 0x60080000
-[  +0.000000] NVRM: GPU0 bifC2CHBIConstructAperture_GR100: C2CHBI ID 1 : type 0 inst 1 : Pri Base Addr = 0x64080000
-[  +0.000021] NVRM: GPU0 bifC2CHBIConstructAperture_GR100: C2CHBI ID 2 : type 1 inst 0 : Pri Base Addr = 0x50080000
-[  +0.000012] NVRM: GPU0 bifC2CHBIConstructAperture_GR100: C2CHBI ID 3 : type 2 inst 0 : Pri Base Addr = 0x40080000
-...
-[  +0.000009] NVRM: GPU0 _bifC2CInitFromRegkeyOverride: Regkey for C2C override present. Links: 0x3fff
-[  +0.000011] NVRM: GPU0 nvAssertFailedNoLog: Assertion failed: pC2CAperture != NULL @ bif_gr100.c:874
-[  +0.000019] NVRM: GPU0 _bifPopulateC2CInfo: C2C link up, CPU link mask: 0x3fff Peer link mask: 0x0 Line rate: 0
-[  +0.000010] NVRM: GPU0 bifEnableC2CInterrupt_GR100: Num C2C Links: 14, Mask 0x00003FFF
-[  +0.000001] NVRM: GPU0 nvAssertFailedNoLog: Assertion failed: pC2CAperture != NULL @ bif_gr100.c:394
-[  +0.000019] NVRM: GPU0 nvAssertFailedNoLog: Assertion failed: pC2CAperture != NULL @ bif_gr100.c:972
-[  +0.000012] NVRM: GPU0 _bifC2CInitFromRegkeyOverride: Failed to load C2C encryption state. Status 0x1f
-[  +0.000009] NVRM: GPU0 bifDiscoverC2C_GH100: DISCOVER_C2C info: remote type for C2C link: 0x00000001
-...
-[  +0.001205] NVRM: GPU0 hshubUpdateChiLinkRegisters_FN100: GPU0: [C2C] HSHUB 1 CHILINK_IO_MAP already programmed by VBIOS to mode 0x2
-[  +0.000146] NVRM: GPU0 hshubUpdateChiLinkRegisters_FN100: GPU0: [C2C] Updated HSHUB 1 config CHI2HSH_CXL_CFG_MEM_ENABLE to 0x1
-[  +0.000259] NVRM: GPU0 hshubUpdateChiLinkRegisters_FN100: GPU0: [C2C] HSHUB 2 CHILINK_IO_MAP already programmed by VBIOS to mode 0x2
-[  +0.000133] NVRM: GPU0 hshubUpdateChiLinkRegisters_FN100: GPU0: [C2C] Updated HSHUB 2 config CHI2HSH_CXL_CFG_MEM_ENABLE to 0x1
-[  +0.000282] NVRM: GPU0 hshubUpdateC2cSysConfigRegs_GH100: GPU0: [C2C] Updated HSHUB 1 config register SysConfig0 = 0x7f
-[  +0.000457] NVRM: GPU0 hshubUpdateC2cSysConfigRegs_GH100: GPU0: [C2C] Updated HSHUB 2 config register SysConfig0 = 0x7f
-[  +0.000428] NVRM: GPU0 memsysEnableNvlinkInNisoHub_GB100: Writing register NV_FBHUB_ZB_CFG1 (offset 0xd4) : Value 0x60000
-...
-[  +0.000280] NVRM: GPU0 memsysSetupCoherentCpuLink_IMPL: ATS supported
-[  +0.000315] NVRM: GPU0 memsysConfigureL2CoherencyErrors_GR100: Disabling L2 coherency errors for compressible surfaces
-[  +0.001405] NVRM: GPU0 _gpuPrereqDeferralCheckCallback: Conditions not met to defer deferrable PREREQ_ENTRY callback (FFFFC2D9829E94D0)!
-[  +0.000020] NVRM: GPU0 engstateLogStateTransitionPost_IMPL: Engine MemorySystem:0 state change: Pre-Init -> Init, took 105790us
-[  +0.000011] NVRM: GPU0 engstateLogStateTransitionPost_IMPL:     Memory usage change: 31 allocations, 10112 bytes
-[  +0.002950] NVRM: GPU0 memdescPrintMemdesc: memdesc allocated Aperture SYSTEM MEMORY starting at 0x13a057000 and of size 0x1000
-[  +0.000012] NVRM: GPU0 memdescPrintMemdesc: Has additional IOMMU mapping for IOVA space 0x50200 starting @ 0x13a057000
-[  +0.000036] NVRM: GPU0 kmemsysInitializeSysLtcApertures_GR100: SYS LTC IO aperture 0 pribase 0xb10000
-[  +0.000001] NVRM: GPU0 kmemsysInitializeSysLtcApertures_GR100: SYS LTC IO aperture 1 pribase 0xb12000
-[  +0.000012] NVRM: GPU0 kmemsysInitializeSysLtcApertures_GR100: SYS LTC IO aperture 2 pribase 0xb14000
-[  +0.000018] NVRM: GPU0 kmemsysInitializeSysLtcApertures_GR100: SYS LTC IO aperture Count 3
-[  +0.001081] NVRM: GPU0 kmemsysGetFbNumaInfo_GV100: NUMA FB Physical address overrided to 0x200000000000 via regkey.
-[  +0.000015] NVRM: GPU0 kmemsysGetFbNumaInfo_GV100: NUMA FB Physical address: 0x200000000000 Size: 0x0sNode ID: 0xffffffff
-[  +0.000017] NVRM: GPU0 memmgrCalcReservedFbSpaceHal_GM107: RT::: incrementing the reserved size by: 0
-[  +0.000008] NVRM: GPU0 _gpuRmApiControl: GPU Internal RM control 0x20800a5b on gpuInst:0 hClient:0xc1e00004 hSubdevice:0xcaf00001
-[  +0.000009] NVRM: GPU0 ctxBufPoolIsSupported: Ctx buffer pool enabled. Ctx buffers will be allocated from PMA
-[  +0.000360] NVRM: GPU0 fifoChidMgrGetNumChannels_GB202: 2048 channels available
-[  +0.000426] NVRM: GPU0 fifoChidMgrGetNumChannels_GB202: 2048 channels available
-[  +0.008494] NVRM: --- last print repeated 15 times ---
-[  +0.000000] NVRM: GPU0 kmemsysSetupCoherentCpuLink_IMPL: coherentCpuFbSize: 0x600000000 NUMA reserved memory size: 0x5fd0000 client available memory size: 0x5fa030000
-[  +0.000970] NVRM: GPU0 kbusCreateCoherentCpuMapping_GH100: wpr1 0xfffffe0000->0x1ffff, wpr2 0xfffffe0000->0x1ffff
-[  +0.006020] NVRM: GPU0 kbusCreateCoherentCpuMapping_GH100: coherent link mapping. i: 0 base: 0x200000000000 size: 0x5fa030000 
-[  +0.000523] NVRM: GPU0 kbusCreateCoherentCpuMapping_GH100: coherent link mapping. i: 1 base: 0x2005fa030000 size: 0x5fd0000 
-[  +0.000008] NVRM: GPU0 kbusCreateCoherentCpuMapping_GH100: Enabling CPU->C2C->FBMEM path
-...
-[  +0.000008] NVRM: GPU0 kbusVerifyCoherentLink_GH100: Coherent link test buffer PA: 0x5fe1bf000
-[  +0.096283] NVRM: GPU0 kmemsysCleanLTCProbeFilter_IMPL: Setting LTC probe filter to CLEAN state
-[  +0.000007] NVRM: GPU0 _gpuRmApiControl: GPU Internal RM control 0x20800ab0 on gpuInst:0 hClient:0xc1e00004 hSubdevice:0xcaf00001
-[  +0.012525] NVRM: GPU0 _gpuRmApiControl: GPU Internal RM control 0x20800a6c on gpuInst:0 hClient:0xc1e00004 hSubdevice:0xcaf00001
-[  +0.000005] NVRM: GPU0 memsysSysL2InvalidateEvict_GB100: Called with flags 0x00000031.
-[  +0.000011] NVRM: GPU0 memsysSysL2InvalidateEvict_GB100: Executing the CLEAN stage with data=0x70010301.
-[  +0.000799] NVRM: GPU0 memsysSysL2InvalidateEvict_GB100: Executing the INVALIDATE stage with data=0x70000301.
-[  +0.000872] NVRM: GPU0 memsysVidL2InvalidateEvict_GB100: called with flags 0x00000031.
-[  +0.000347] NVRM: GPU0 memsysVidL2InvalidateEvict_GB100: executing the CLEAN stage with data=0x70010301.
-[  +0.002231] NVRM: GPU0 memsysVidL2InvalidateEvict_GB100: executing the INVALIDATE stage with data=0x70000301.
-[  +0.128405] NVRM: GPU0 memdescPrintMemdesc: memdesc being freed Aperture VIDEO MEMORY starting at 0x5fe1bf000 and of size 0x100
-[  +0.005395] NVRM: GPU0 kbusVerifyCoherentLink_GH100: Coherent link test passes
-...
-[  +0.023010] NVRM: GPU0 _bar2WalkCBUpdatePde:     SubLevel 0 = INVALID
-[  +0.000010] NVRM: GPU0 _bar2WalkCBUpdatePde:     SubLevel 1 = PA 0x5FE285000
-[  +0.023767] NVRM: GPU0 _bar2WalkCBUpdatePde:     SubLevel 0 = INVALID
-[  +0.000003] NVRM: GPU0 _bar2WalkCBUpdatePde:     SubLevel 1 = PA 0x5FE286000
-[  +0.023920] NVRM: GPU0 _bar2WalkCBUpdatePde:     SubLevel 0 = INVALID
-[  +0.000014] NVRM: GPU0 _bar2WalkCBUpdatePde:     SubLevel 1 = PA 0x5FE287000
-...
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
 
 root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
 Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
@@ -1572,7 +1472,7 @@ Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
 ....
 pending on GPU CE no actions ....
 
-Fixed by https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3698632 <== need to update new version
+Fixed by bootwrapper SID and TBU patch by https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3698839 <== need to update new version
 
 root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
 Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
