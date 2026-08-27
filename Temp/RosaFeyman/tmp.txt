@@ -1794,7 +1794,49 @@ root@ubuntu-L1:/home/nvidia# lspci -vvv -s 0005:02:00.0 | grep -i ats
 
 
 [GPU MMU fault log]
-After applying following patch to fix the GPU BDF hard code bug in commlib_chi_transactor.cpp
+
+kernel log: 
+  [  +0.000037] arm-smmu-v3 arm-smmu-v3.1.auto: event 0x05 received:
+  [  +0.000008] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00050100fffff005
+  [  +0.000005] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000c0000001
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000ffedf000
+  [  +0.000006] arm-smmu-v3 arm-smmu-v3.1.auto:     0x0000000000000000
+  [  +0.000009] arm-smmu-v3 arm-smmu-v3.1.auto: event 0x05 received:
+  [  +0.000009] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00050100fffff005
+  [  +0.000006] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000c0000001
+  [  +0.000000] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000ffedf000
+  [  +0.000015] arm-smmu-v3 arm-smmu-v3.1.auto:     0x0000000000000000
+  [  +0.000008] arm-smmu-v3 arm-smmu-v3.1.auto: event 0x05 received:
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00050100fffff005
+  [  +0.000007] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000c0000001
+  [  +0.000007] arm-smmu-v3 arm-smmu-v3.1.auto:     0x000000009ff00000
+  [  +0.000003] arm-smmu-v3 arm-smmu-v3.1.auto:     0x0000000000000000
+  [  +0.000013] arm-smmu-v3 arm-smmu-v3.1.auto: event 0x05 received:
+  [  +0.000007] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00050100fffff005
+  [  +0.000000] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000c0000001
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto:     0x000000009ff00000
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto:     0x0000000000000000
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto: event 0x05 received:
+  [  +0.000003] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00050100fffff005
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto:     0x00000000c0000001
+  [  +0.000007] arm-smmu-v3 arm-smmu-v3.1.auto:     0x000000009ff00000
+  [  +0.000010] arm-smmu-v3 arm-smmu-v3.1.auto:     0x0000000000000000
+
+GPU log:  
+  Info: [ nvclk=6918231 mmu . mmuGolden.cpp 6975 ] MMU Fault: serial ATS translation error for gpa 0xffedf0, gfid 0
+  Info: [ nvclk=6918231 mmu . mmuGolden.cpp 7427 ] #2593288 setting sticky NACK: fault_type FAULT_PTE(2), node NODE_HUB(96), unit UNIT_ESC(99), debug_enabled 0
+  Info: [ nvclk=6918231 mmu . mmuGolden.cpp 1740 ] **** MMU Fault Detected! **** see req, resp and fault info below. More specific message may be above,VA=0x100000000, Fault
+  type=FAULT_PTE(2), EngineId=FB_IDX_HOST1(86), NodeID=NODE_HUB(96), UnitID=UNIT_ESC(99),  SMC=0, GFID=0
+  Info: [ nvclk=6918231 mmu . mmuGolden.cpp 1749 ] **** MMU Fault Access req  info  : req=[vadr=0x01000000; reqType=eVirtual_rd_cmd(0); gfid=0; tlb_source.type=1; nvlink_gfid=0;
+  mask=0x0; subid=0x23; vc=VC_BLOCKING(1); client_id=UNIT_ESC(99); engine_id=FB_IDX_HOST1(86); sys_membar=0; spa=0; ];
+  Info: [ nvclk=6918231 mmu . mmuGolden.cpp 1750 ] **** MMU Fault Access resp info  : resp=[padr=0x00000000; aperture=APERTURE_LOCAL_MEM(0); kind=0x0; faultType=FAULT_PTE(2);
+  peer_id=0; page_size=4096; dst_node_id=NODE_GPC_0(0); dst_unit_id=UNIT_T1_2(2); dst_port_id=PORT0(0); sparse_access=0; use_standard_for_concat_pkt=0; atomic_handling=0; ats=0;
+  l2_bypass=0; mmio=0; replayable=0; debug_enabled=0; ordered_wr_pcie=0; ];
+  Info: [ nvclk=6918231 mmu . mmuGolden.cpp 1751 ] **** MMU Fault Access reason(s)  :
+  Info: [ nvclk=6918237 mmu . mmuGolden.cpp 2047 ] Non-PASID ATS: Translation is NOT valid (atvld=0)
+  Info: [ nvclk=6918237 mmu . mmuGolden.cpp 2053 ] Non-PASID ATS: Translation is NOT valid (atra=0. not supported)
+
+After applying following patch to fix the GPU BDF hard code bug in commlib_chi_transactor.cpp, the "Non-PASID ATS: Translation is NOT valid (atvld=0)" was gone ....
 # patch:
     Site 1 — line 874, send_ats_request_to_mc() (GPU→SMMU ATS translate):                                                                                    
 -    ats_req->BDF = 0x100;                                                                                                                                                              
@@ -1806,7 +1848,7 @@ After applying following patch to fix the GPU BDF hard code bug in commlib_chi_t
     Same story — nci_atsd_req->BDF is already available and logged. Fix, matching original chi_transactor.cpp:736:                                                                     
 +    gchi_atsd_payload.bdf = nci_atsd_req->BDF;
 
-GPU log:
+new GPU log:
 Info: [ nvclk=21808002 mmu . mmuPageTableV3.cpp 151 ] MMU Fault: PDE2 invalid aperture and not sparse. This generally indicates the page table is not set up, or the engine is bound to the wrong page table. MMU team likely unable to be able to help with this error.
 Info: [ nvclk=21808002 mmu . mmuGolden.cpp 7427 ] #2593289 setting sticky NACK: fault_type FAULT_PDE(0), node NODE_HUB(96), unit UNIT_ESC(99), debug_enabled 0
 Info: [ nvclk=21808002 mmu . mmuGolden.cpp 1740 ] **** MMU Fault Detected! **** see req, resp and fault info below. More specific message may be above,VA=0xfffffff000, Fault type=FAULT_PDE(0), EngineId=FB_IDX_HOST1(86), NodeID=NODE_HUB(96), UnitID=UNIT_ESC(99),  SMC=0, GFID=0
