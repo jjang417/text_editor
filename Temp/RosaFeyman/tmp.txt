@@ -1324,6 +1324,8 @@ root@pset$ busybox devmem 0x200000000000 32 0x5a
 root@pset$ busybox devmem 0x200000000000 32
 0x0000005A
 
+## for single GPU case:
+    sudo HDM_BASE=0x200000000000 bash /root/host-shared/t414_hshub_c2c_program.sh
 
 
 [C2C frontdoort test]
@@ -1331,10 +1333,6 @@ root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
 root@ubuntu-L1:/home/nvidia# sudo dmesg -wH
 
 
-## for single GPU case:
-    sudo HDM_BASE=0x200000000000 bash /root/host-shared/t414_hshub_c2c_program.sh
-
-## for 2 GPUs case:
 root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/t414_hshub_c2c_program.sh
 BAR0 auto-discovered via 'lspci -vd 10de:37bf': 0x804100000000,0x804900000000
 Skipping the coherent-test SPA read (0x2005fe1bf000) — it crashed SCSIM with a CHBM 'padr is too large' assert in bug 6528454 #34. Pass --with-coherent-test-read to attempt it anyway.
@@ -1635,3 +1633,194 @@ rmControl: client=c1d0000e, object=c1d0000e, cmd=216
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test suite ran. (122564 ms total)
 [  PASSED  ] 1 test.
+
+
+
+[ATS enabled]
+root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
+
+
+sudo bash /root/host-shared/t414_hshub_c2c_program.sh
+
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RmAllowIncompatibleHwSwVersion=1'
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V &
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+
+Normal CE test:
+
+./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+
+
+ATS-enabled CE test:
+
+./RM/tests-Linux-aarch64/resman/channel --gtest_filter=*ATS* -v
+
+
+
+FN102 GPU doesn't support ATS now ...
+
+root@ubuntu-L1:/home/nvidia# sudo lspci -vvv -s 0005:02:00.0 | grep Capabilities:
+        Capabilities: [40] Express (v2) Endpoint, MSI 00
+        Capabilities: [7c] MSI-X: Enable- Count=12 Masked-
+        Capabilities: [88] Power Management version 3
+        Capabilities: [90] Vendor Specific Information: Len=14 <?>
+        Capabilities: [a4] Vendor Specific Information: Len=18 <?>
+
+
+but VRU GPU support ATS 
+
+root@ubuntu-L1:/home/nvidia# lspci -vvv -s 0003:01:00.0 | grep -i "Capabilities:"
+        Capabilities: [40] Express (v2) Endpoint, MSI 00
+        Capabilities: [7c] MSI-X: Enable- Count=12 Masked-
+        Capabilities: [88] Power Management version 3
+        Capabilities: [90] Vendor Specific Information: Len=14 <?>
+        Capabilities: [a4] Vendor Specific Information: Len=18 <?>
+        Capabilities: [100 v1] Device Serial Number 48-b0-2d-ff-ff-ff-ff-ff
+        Capabilities: [148 v2] Advanced Error Reporting
+        Capabilities: [190 v1] Latency Tolerance Reporting
+        Capabilities: [198 v1] Physical Resizable BAR
+        Capabilities: [1a4 v1] Virtual Resizable BAR
+        Capabilities: [1d8 v1] Data Link Feature <?>
+        Capabilities: [1e4 v1] Physical Layer 16.0 GT/s <?>
+        Capabilities: [214 v1] Extended Capability ID 0x2a
+        Capabilities: [244 v1] Secondary PCI Express
+        Capabilities: [270 v1] Lane Margining at the Receiver <?>
+        Capabilities: [2f8 v1] Alternative Routing-ID Interpretation (ARI)
+        Capabilities: [300 v1] Single Root I/O Virtualization (SR-IOV)
+        Capabilities: [340 v2] L1 PM Substates
+        Capabilities: [368 v1] Power Budgeting <?>
+        Capabilities: [378 v2] Extended Capability ID 0x2e
+        Capabilities: [390 v2] Extended Capability ID 0x2e
+        Capabilities: [3a8 v1] Address Translation Service (ATS)
+        Capabilities: [3b0 v1] Process Address Space ID (PASID)
+        Capabilities: [3e8 v1] Extended Capability ID 0x30
+        Capabilities: [a7c v1] Extended Capability ID 0x2b
+        Capabilities: [ac0 v1] Extended Capability ID 0x31
+        Capabilities: [ae0 v1] Extended Capability ID 0x2f
+        Capabilities: [af0 v1] Designated Vendor-Specific: Vendor=10de ID=0000 Rev=0 Len=28 <?>
+        Capabilities: [b0c v1] Designated Vendor-Specific: Vendor=10de ID=0001 Rev=0 Len=16 <?>
+        Capabilities: [b1c v1] Extended Capability ID 0x32
+        Capabilities: [ba4 v1] Designated Vendor-Specific: Vendor=10de ID=0003 Rev=0 Len=16 <?>
+
+
+SCSIM Rosa/Feyman GPU direct connect could see ATS cap:
+
+nvidia@pset$ sudo lspci -vvv -s 0001:01:00.0 | grep -i "Capabilities:"
+	Capabilities: [40] Express (v2) Endpoint, IntMsgNum 0, FLIT Mode Supported
+	Capabilities: [7c] MSI-X: Enable- Count=12 Masked-
+	Capabilities: [88] Power Management version 3
+	Capabilities: [90] Vendor Specific Information: Len=14 <?>
+	Capabilities: [a4] Vendor Specific Information: Len=18 <?>
+	Capabilities: [100 v1] Device Serial Number 48-b0-2d-ff-ff-ff-ff-ff
+	Capabilities: [148 v2] Advanced Error Reporting
+	Capabilities: [190 v1] Latency Tolerance Reporting
+	Capabilities: [198 v1] Physical Resizable BAR
+	Capabilities: [1a4 v1] Virtual Resizable BAR
+	Capabilities: [1d8 v1] Data Link Feature <?>
+	Capabilities: [1e4 v1] Physical Layer 16.0 GT/s
+	Capabilities: [214 v1] Physical Layer 32.0 GT/s
+	Capabilities: [244 v1] Secondary PCI Express
+	Capabilities: [270 v1] Lane Margining at the Receiver
+	Capabilities: [2f8 v1] Alternative Routing-ID Interpretation (ARI)
+	Capabilities: [300 v1] Single Root I/O Virtualization (SR-IOV)
+	Capabilities: [340 v2] L1 PM Substates
+	Capabilities: [368 v1] Power Budgeting <?>
+	Capabilities: [378 v2] Data Object Exchange
+	Capabilities: [390 v2] Data Object Exchange
+	Capabilities: [3a8 v1] Address Translation Service (ATS)
+	Capabilities: [3b0 v1] Process Address Space ID (PASID)
+	Capabilities: [3e8 v1] Integrity & Data Encryption
+	Capabilities: [a7c v1] Extended Capability ID 0x2b
+	Capabilities: [ac0 v1] Physical Layer 64.0 GT/s
+	Capabilities: [ae0 v1] Device 3
+	Capabilities: [af0 v1] Designated Vendor-Specific: Vendor=10de ID=0000 Rev=0 Len=28 <?>
+	Capabilities: [b0c v1] Designated Vendor-Specific: Vendor=10de ID=0001 Rev=0 Len=16 <?>
+	Capabilities: [b1c v1] Extended Capability ID 0x32
+	Capabilities: [ba4 v1] Designated Vendor-Specific: Vendor=10de ID=0003 Rev=0 Len=16 <?>
+
+
+[Conclusion]
+We have the root cause regardless of how this test comes out:
+
+  [    0.085388] pci_bus 0005:02: extended config space not accessible
+  [    0.093913] pci_bus 0005:82: extended config space not accessible
+
+  The full chain, each link now evidence-backed:
+
+  1. At enumeration, pci_bridge_child_ext_cfg_accessible(0005:01:00.0) returned false
+  2. → PCI_BUS_FLAGS_NO_EXTCFG set on buses 0005:02 and 0005:82
+  3. → pci_cfg_space_size() returns 256 without probing (early-out at probe.c:1789)
+  4. → lspci/sysfs truncate at 256 → no extended caps visible
+  5. → pci_find_ext_capability(ATS) finds nothing → pci_enable_ats() never called
+  6. → STE.EATS = 0 → every ATS request → F_BAD_ATS_TREQ (event 0x05)
+
+The causal chain is established and reproducible:
+
+  Linux flags bus 0005:02/0005:82 "extended config space not accessible"
+    → PCI_BUS_FLAGS_NO_EXTCFG
+    → pci_cfg_space_size() returns 256 without probing
+    → extended caps never enumerated (ATS at 0x3a8 invisible)
+    → pci_enable_ats() never called → STE.EATS = 0
+    → GPU's ATS requests → F_BAD_ATS_TREQ (event 0x05)
+
+After kernel patch,
+
+root@ubuntu-L1:/home/nvidia# lspci -vvv -s 0005:02:00.0 | grep -i ats
+	Capabilities: [3a8 v1] Address Translation Service (ATS)
+		ATSCap:	Invalidate Queue Depth: 00
+		ATSCtl:	Enable+, Smallest Translation Unit: 00
+
+
+ Final result: five layers traced, all clean
+
+  ┌────────────────────────────────────┬──────────────────────────────┬─────────────────────────┐
+  │               layer                │           delivers           │        evidence         │
+  ├────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
+  │ mlx5 / GPU config model            │ 0x0062 (or 0x0002 pre-patch) │ source                  │
+  ├────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
+  │ DevProc / CX10 bridge              │ 0x00629c10                   │ 67/67                   │
+  ├────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
+  │ SCSIM commlib PCIRead              │ 0x629c10                     │ 24/24 + 19 forced       │
+  ├────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
+  │ pcie_rc ProcessEgressEcam          │ 0x00629c10 → shifted         │ correct per-device      │
+  ├────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
+  │ pcie_rc AdjustCfgRdUnalignedAccess │ 0x0062                       │ 3/3 on Linux's own read │
+  ├────────────────────────────────────┼──────────────────────────────┼─────────────────────────┤
+  │ guest kernel                       │ 0x0007                       │ ✗                       │
+  └────────────────────────────────────┴──────────────────────────────┴─────────────────────────┘
+
+
+
+[GPU MMU fault log]
+After applying following patch to fix the GPU BDF hard code bug in commlib_chi_transactor.cpp
+# patch:
+    Site 1 — line 874, send_ats_request_to_mc() (GPU→SMMU ATS translate):                                                                                    
+-    ats_req->BDF = 0x100;                                                                                                                                                              
+    The real value is already sitting right there and even gets logged one line later (gchi_req_payload.bdf.raw()). Fix, matching the original chi_transactor.cpp:565:                 
++    ats_req->BDF = static_cast<uint32_t>(gchi_req_payload.bdf.raw());                                                                                                                  
+                                                                                                                                                                                       
+    Site 2 — line 1044, send_atsd_gchi_packet() (SMMU→GPU ATSD invalidate):                                                                                                            
+-    gchi_atsd_payload.bdf = 0x100;                                                                                                                                                     
+    Same story — nci_atsd_req->BDF is already available and logged. Fix, matching original chi_transactor.cpp:736:                                                                     
++    gchi_atsd_payload.bdf = nci_atsd_req->BDF;
+
+GPU log:
+Info: [ nvclk=21808002 mmu . mmuPageTableV3.cpp 151 ] MMU Fault: PDE2 invalid aperture and not sparse. This generally indicates the page table is not set up, or the engine is bound to the wrong page table. MMU team likely unable to be able to help with this error.
+Info: [ nvclk=21808002 mmu . mmuGolden.cpp 7427 ] #2593289 setting sticky NACK: fault_type FAULT_PDE(0), node NODE_HUB(96), unit UNIT_ESC(99), debug_enabled 0
+Info: [ nvclk=21808002 mmu . mmuGolden.cpp 1740 ] **** MMU Fault Detected! **** see req, resp and fault info below. More specific message may be above,VA=0xfffffff000, Fault type=FAULT_PDE(0), EngineId=FB_IDX_HOST1(86), NodeID=NODE_HUB(96), UnitID=UNIT_ESC(99),  SMC=0, GFID=0
+Info: [ nvclk=21808002 mmu . mmuGolden.cpp 1749 ] **** MMU Fault Access req  info  : req=[vadr=0xfffffff0; reqType=eVirtual_rd_cmd(0); gfid=0; tlb_source.type=1; nvlink_gfid=0; mask=0x0; subid=0x24; vc=VC_BLOCKING(1); client_id=UNIT_ESC(99); engine_id=FB_IDX_HOST1(86); sys_membar=0; spa=0; ]; 
+Info: [ nvclk=21808002 mmu . mmuGolden.cpp 1750 ] **** MMU Fault Access resp info  : resp=[padr=0x00000000; aperture=APERTURE_LOCAL_MEM(0); kind=0x0; faultType=FAULT_PDE(0); peer_id=0; page_size=4096; dst_node_id=NODE_GPC_0(0); dst_unit_id=UNIT_T1_2(2); dst_port_id=PORT0(0); sparse_access=0; use_standard_for_concat_pkt=0; atomic_handling=0; ats=0; l2_bypass=0; mmio=0; replayable=0; debug_enabled=0; ordered_wr_pcie=0; ]; 
+Info: [ nvclk=21808002 mmu . mmuGolden.cpp 1751 ] **** MMU Fault Access reason(s)  : 
+Info: [ nvclk=21808005 nvsim . sim_module.cpp 845 ] 21808005: mark_forward_progress: u_minitop.u_dietop1.lpsec2gpc_9_0 (data sent : atleast 1)
+Info: [ nvclk=21808008 mmu . mmuGolden.cpp 2053 ] Non-PASID ATS: Translation is NOT valid (atra=0. not supported)
+
+Info: [ nvclk=21808008 mmu . mmuGolden.cpp 6975 ] MMU Fault: serial ATS translation error for gpa 0x9ff800, gfid 0
+Info: [ nvclk=21808008 mmu . mmuGolden.cpp 1740 ] **** MMU Fault Detected! **** see req, resp and fault info below. More specific message may be above,VA=0x2001000, Fault type=FAULT_PTE(2), EngineId=FB_IDX_BAR2(320), NodeID=NODE_HUB(96), UnitID=UNIT_MMU(10),  SMC=0, GFID=0
+Info: [ nvclk=21808008 mmu . mmuGolden.cpp 1749 ] **** MMU Fault Access req  info  : req=[vadr=0x00020010; reqType=eVirtual_wr_cmd(1); gfid=0; tlb_source.type=0; nvlink_gfid=0; mask=0x1; subid=0x0; vc=VC_BLOCKING(1); client_id=UNIT_MMU(10); engine_id=FB_IDX_BAR2(320); sys_membar=0; spa=0; ]; 
+Info: [ nvclk=21808008 mmu . mmuGolden.cpp 1750 ] **** MMU Fault Access resp info  : resp=[padr=0x00000000; aperture=APERTURE_LOCAL_MEM(0); kind=0x0; faultType=FAULT_PTE(2); peer_id=0; page_size=4096; dst_node_id=NODE_GPC_0(0); dst_unit_id=UNIT_T1_2(2); dst_port_id=PORT0(0); sparse_access=0; use_standard_for_concat_pkt=0; atomic_handling=0; ats=0; l2_bypass=0; mmio=0; replayable=0; debug_enabled=0; ordered_wr_pcie=0; ]; 
+Info: [ nvclk=21808008 mmu . mmuGolden.cpp 1751 ] **** MMU Fault Access reason(s)  
+
+New MMU error =>  Non-PASID ATS: Translation is NOT valid (atra=0. not supported)
+

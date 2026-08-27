@@ -26,3 +26,8 @@
     - hotfix libs @ https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/scsim/c2c_hotfix_lib/
 
 ## SCSIM commlib_chi_transactor patch to support ATS: https://p4hw-swarm.nvidia.com/reviews/104612797?v=,2
+
+## C2C frontdoor issue - https://nvbugspro.nvidia.com/bug/6528454 - need to program GPU HSHUB register to enable C2C frondoor path
+
+## GPU UUID issue - https://nvbugspro.nvidia.com/bug/6670032
+
