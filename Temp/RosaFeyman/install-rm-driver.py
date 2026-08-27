@@ -1,4 +1,4 @@
-root@dl325g11-2067:~/scratch-4gpu-scripts# cat install-rm-38823641.py
+root@dl325g11-2067:~/scratch-4gpu-scripts# cat /root/scratch-4gpu-scripts/install-rm-38823641.py
 #!/usr/bin/env python3
 """
 Install RM driver 38823641 + tests into the running ARM64 L1 guest via UART console.
