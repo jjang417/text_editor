@@ -1,0 +1,980 @@
+
+
+root@dl325g11-2067:~/SimX/weaver# bash runs/rf_c1g2n2/deploy.sh --resume \
+    --set NIC_FN=false \
+    --set GPU_USE_BDF_VALUE=per_gpu \
+    --set GPU_COUNT=1 \
+    --set GPU_BRIDGE_NIC_COUNT=1 \
+    --set GPU_GUEST_BDFS="0005:02:00.0" \
+    --set HGX_GUEST_IMAGE_NAME=HGX-L1-GUEST_ROSA_63000.img \
+    --set HGX_GUEST_IMAGE_FN102_SHA256="" \
+    --set C2C_ATS_ENABLE=true \
+    --set HOTFIX_LIBS_LOCAL_DIR=/root/SimX/scsim_hotfix_test/round11
+[INFO]    14:53:51 REFERENCE_EXTRA_CHIPARGS: appending 24 extra chiparg(s)
+[INFO]    14:53:51 GPU_C2C=true: added -c2c0..13=CPU, -send_atr_over_xbar, -floorsweep=c2c_disable:0x3
+[INFO]    14:53:51 Rosa C2C hot-fix libs enabled (ROSA_C2C_HOTFIX_LIBS=auto, GPU_C2C=true): libtb500_gpu_sc.so libtb500_gpu_wrapper_fsim.so libtb500_nv_top_fsim.so
+[INFO]    14:53:51 SCSIM_PLATFORM=rosa: image=scsim_docker_img:rosa_r1d5 launcher=auto_run.sh container=CT_0_rosa component=SCSIM_TB600_0
+[INFO]    14:53:51 Resuming from step next
+[INFO]    14:53:51 Stage: prepare
+[INFO]    14:53:51 Wave resume: skipping completed step(s) 2:docker_pull_vera 3:docker_pull_gpu 4:docker_pull_cx 5:download_chipsim 6:download_nvos 8:download_mse 9:download_qm_libs 10:download_vbios 12:gen_gpu_config (logs preserved)
+[INFO]    14:53:51 Wave starting (parallel): 7:prepare_base_image 11:download_hotfix_libs
+[INFO]    14:54:21 Wave 0m30s — 1/2 done, 1 running:
+                   ↻ prepare_base_image         [INFO]    14:53:51 Copying source image to tray: HGX-L1-GUEST-CT_0.img
+                   ✓ download_hotfix_libs
+[INFO]    14:54:40 Wave complete in 49s: 7:prepare_base_image 11:download_hotfix_libs
+[Step 28/29] build_pcie_extcfg_fix
+[INFO]    14:54:40 Cross-building pcie_extcfg_fix.ko for the guest kernel
+  │   guest kernel: 5.15.0-163-generic
+  │   using cached module: pcie_extcfg_fix.5.15.0-163-generic.ko
+[INFO]    14:54:42 Stage: start
+[Step 13/29] start_vera_ct0
+  │ ==> cleanup-host (state-dir: /run/tap2dock0)
+  │   - state[40f71c] ctr=CT_0_rosa veth_h=vh40f71c tap_tmp=tp40f71c
+  │ ==> cleanup-host done
+  │ ==> cleanup-orphans (scan alias 'tap2dock0:')
+  │ ==> cleanup-orphans done
+[INFO]    14:54:42 Starting CT_0_rosa (+ tap0 setup)
+  │ legacy launcher patched (sim-PID gate made tunable): /tmp/weaver/rf_c1g2n2/share/auto_run.CT_0.patched.sh
+  │ C2C gpvars derived from scsim_docker_img:rosa_r1d5: /tmp/weaver/rf_c1g2n2/share/sim_gpvars.c2c.py
+  │ 8740aabe1f9c9acf6030ce4724ea7aa3f3a75031ccba611cf2977e2acd55353c
+[INFO]    14:54:44 Waiting 30s for scsim container initialization
+[INFO]    14:55:12 [Step 13/29] start_vera_ct0 still running (0m30s)
+  │ ==> [CT_0_rosa] pid=3161823  tap_tmp=tp40f71c  veth=vh40f71c<->vc40f71c  br=br_tap
+  │ OK: [CT_0_rosa] tap0 ready. topology: tap0 -- br_tap -- vc40f71c <-> vh40f71c(host) -- docker0
+
+[INFO]    14:55:14 CT_0_rosa started; tap0 ready
+[Step 15/29] cx_p2p_setup
+[INFO]    14:55:14 Establishing 1 intra-tray CX P2P NIC pair(s)
+[INFO]    14:55:14 CX pair 0: cx_nic0 <-> cx_nic1 (UDP port 5, device CX10)
+  │ 2f29211b1306b107467240cb8738a25ad22602f018073b5bf4e2faabfbc7d154
+  │ ba973786774d745140cbc02f0e8cbbd0dc5933f607c92d4e10f2ec8cbdcc8b42
+[INFO]    14:55:35 CX pair 0 established (cx_nic0 172.17.0.3 <-> cx_nic1 172.17.0.4, UDP 5)
+[INFO]    14:55:35 All 1 CX P2P pair(s) established
+[Step 27/29] c2c_backdoor_mapfile
+[INFO]    14:55:35 GPU_C2C_BACKDOOR=false: skipping C2C backdoor memstore staging
+[Step 14/29] start_gpu_ct0
+[INFO]    14:55:35 Starting 1 CT_0 GPU container(s) (first: NVGPU_DEVPROC_1, instance 0)
+  │ 15fc609039d24d1e5c8a7d6081af06abcfb9e3ed192cfb6e64275dfd414a2841
+[INFO]    14:55:41 1 CT_0 GPU container(s) started
+[Step 16/29] wait_vm_ct0
+[INFO]    14:55:41 Waiting for CT_0 guest VM SSH (nvidia@172.17.0.100, timeout 2700s)
+[INFO]    14:56:11 [Step 16/29] wait_vm_ct0 still running (0m30s)
+[INFO]    14:56:41 [Step 16/29] wait_vm_ct0 still running (1m0s)
+[INFO]    14:57:11 [Step 16/29] wait_vm_ct0 still running (1m30s)
+[INFO]    14:57:41 [Step 16/29] wait_vm_ct0 still running (2m0s)
+[INFO]    14:58:11 [Step 16/29] wait_vm_ct0 still running (2m30s)
+[INFO]    14:58:41 [Step 16/29] wait_vm_ct0 still running (3m0s)
+[INFO]    14:59:11 [Step 16/29] wait_vm_ct0 still running (3m30s)
+[INFO]    14:59:41 [Step 16/29] wait_vm_ct0 still running (4m0s)
+[INFO]    15:00:11 [Step 16/29] wait_vm_ct0 still running (4m30s)
+[INFO]    15:00:41 [Step 16/29] wait_vm_ct0 still running (5m0s)
+[INFO]    15:01:11 [Step 16/29] wait_vm_ct0 still running (5m30s)
+[INFO]    15:01:41 [Step 16/29] wait_vm_ct0 still running (6m0s)
+[INFO]    15:02:11 [Step 16/29] wait_vm_ct0 still running (6m30s)
+[INFO]    15:02:41 [Step 16/29] wait_vm_ct0 still running (7m0s)
+[INFO]    15:03:11 [Step 16/29] wait_vm_ct0 still running (7m30s)
+[INFO]    15:03:41 [Step 16/29] wait_vm_ct0 still running (8m0s)
+[INFO]    15:04:11 [Step 16/29] wait_vm_ct0 still running (8m30s)
+[INFO]    15:04:41 [Step 16/29] wait_vm_ct0 still running (9m0s)
+[INFO]    15:05:11 [Step 16/29] wait_vm_ct0 still running (9m30s)
+[INFO]    15:05:41 [Step 16/29] wait_vm_ct0 still running (10m0s)
+[INFO]    15:06:11 [Step 16/29] wait_vm_ct0 still running (10m30s)
+[INFO]    15:06:41 [Step 16/29] wait_vm_ct0 still running (11m0s)
+[INFO]    15:07:11 [Step 16/29] wait_vm_ct0 still running (11m30s)
+[INFO]    15:07:41 [Step 16/29] wait_vm_ct0 still running (12m0s)
+[INFO]    15:08:11 [Step 16/29] wait_vm_ct0 still running (12m30s)
+[INFO]    15:08:41 [Step 16/29] wait_vm_ct0 still running (13m0s)
+[INFO]    15:09:11 [Step 16/29] wait_vm_ct0 still running (13m30s)
+[INFO]    15:09:41 [Step 16/29] wait_vm_ct0 still running (14m0s)
+[INFO]    15:10:11 [Step 16/29] wait_vm_ct0 still running (14m30s)
+[INFO]    15:10:41 [Step 16/29] wait_vm_ct0 still running (15m0s)
+[INFO]    15:11:11 [Step 16/29] wait_vm_ct0 still running (15m30s)
+[INFO]    15:11:41 [Step 16/29] wait_vm_ct0 still running (16m0s)
+[INFO]    15:12:11 [Step 16/29] wait_vm_ct0 still running (16m30s)
+[INFO]    15:12:41 [Step 16/29] wait_vm_ct0 still running (17m0s)
+[INFO]    15:13:11 [Step 16/29] wait_vm_ct0 still running (17m30s)
+[INFO]    15:13:41 [Step 16/29] wait_vm_ct0 still running (18m0s)
+[INFO]    15:14:11 [Step 16/29] wait_vm_ct0 still running (18m30s)
+[INFO]    15:14:41 [Step 16/29] wait_vm_ct0 still running (19m0s)
+[INFO]    15:15:11 [Step 16/29] wait_vm_ct0 still running (19m30s)
+[INFO]    15:15:15 CT_0 guest VM ready (SSH up)
+[Step 17/29] setup_9p_ct0
+[INFO]    15:15:16 Setting up 9p share: CT_0_rosa:/root/host-shared -> 172.17.0.100:/root/host-shared
+[INFO]    15:15:46 [Step 17/29] setup_9p_ct0 still running (0m30s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:16:16 [Step 17/29] setup_9p_ct0 still running (1m0s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:16:46 [Step 17/29] setup_9p_ct0 still running (1m30s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:17:16 [Step 17/29] setup_9p_ct0 still running (2m0s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:17:46 [Step 17/29] setup_9p_ct0 still running (2m30s)
+[INFO]    15:17:53 9p share mounted and verified (CT_0)
+[Step 29/29] apply_pcie_extcfg_fix
+[WARN]    15:17:53 WORKAROUND: repairing mis-cached PCIe port type in the guest (SCSIM/VDK defect; see debug_logs/FINDINGS_gpu_ats.md)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:18:23 [Step 29/29] apply_pcie_extcfg_fix still running (0m30s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:18:53 [Step 29/29] apply_pcie_extcfg_fix still running (1m0s)
+  │ [   64.593214] pcie_extcfg_fix: scanning for buses flagged NO_EXTCFG
+  │ [   64.593264] pcie_extcfg_fix: 0005:01:00.0 pcie_flags_reg 0x0007 -> 0x0062 (type 0 -> 6); clearing NO_EXTCFG on 0005:02
+  │ [   64.593264] pcie_extcfg_fix: 1 bus(es) flagged, 1 repaired (now remove+rescan the endpoints)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:19:23 [Step 29/29] apply_pcie_extcfg_fix still running (1m30s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:19:53 [Step 29/29] apply_pcie_extcfg_fix still running (2m0s)
+[INFO]    15:20:23 [Step 29/29] apply_pcie_extcfg_fix still running (2m30s)
+[INFO]    15:20:53 [Step 29/29] apply_pcie_extcfg_fix still running (3m0s)
+  │ Warning: Permanently added '172.17.0.100' (ED25519) to the list of known hosts.
+[INFO]    15:21:05   0005:02:00.0: extended config space restored (cfg_size=4096)
+[INFO]    15:21:05 Stage: link_phys — skipped (NO_GPU_QM=true: no QM5/NVLink path)
+[INFO]    15:21:05 Stage: link_logic
+[Step 26/29] cx_ping
+[WARN]    15:21:05 pair 0 has no shared tunnel (bridged pairs need NIC_FN=true) — not pinged
+[INFO]    15:21:05 no CX NIC pair shares a tunnel — nothing to ping; skipping
+[SUCCESS] 15:21:06 Deployment complete!
+────────────────────────────────────────────────────────────
+[Summary] rf_c1g2n2 — runtime 27m 15s (started 2026-08-28T14:53:51Z)
+  Host memory: peak 45.2 / avg 39.8 of 755.2 GB (327 samples @ 5s)
+  Load avg:    peak 4.57 / avg 2.40 (1-min) of 192 cores
+  Disk:        RUN_DIR 230.6 GB · mount / used +47.7 GB (now 26% of 11.5 TB)
+────────────────────────────────────────────────────────────
+root@dl325g11-2067:~/SimX/weaver# ssh nvidia@172.17.0.100
+nvidia@172.17.0.100's password: 
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 5.15.0-163-generic aarch64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Fri Aug 28 01:07:41 UTC 2026
+
+  System load:             1.89
+  Usage of /:              59.2% of 28.90GB
+  Memory usage:            1%
+  Swap usage:              0%
+  Processes:               159
+  Users logged in:         0
+  IPv4 address for enp0s1: 172.17.0.100
+  IPv6 address for enp0s1: fec0::42:acff:fe11:64
+
+
+Expanded Security Maintenance for Applications is not enabled.
+
+178 updates can be applied immediately.
+154 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+The list of available updates is more than a week old.
+To check for new updates run: sudo apt update
+New release '24.04.4 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+Last login: Fri Aug 28 01:07:49 2026
+nvidia@ubuntu-L1:~$ sudo -s
+root@ubuntu-L1:/home/nvidia# lspci -nn
+0001:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0002:01:00.0 Non-Volatile memory controller [0108]: Intel Corporation Device [8086:0111] (rev 01)
+0005:00:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+0005:01:00.0 PCI bridge [0604]: Mellanox Technologies Device [15b3:2102]
+0005:02:00.0 3D controller [0302]: NVIDIA Corporation Device [10de:37bf] (rev a1)
+0005:80:00.0 PCI bridge [0604]: NVIDIA Corporation Device [10de:2f94] (rev 06)
+root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
+kernel.watchdog_thresh = 0
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/t414_hshub_c2c_program.sh
+BAR0 auto-discovered via 'lspci -vd 10de:37bf': 0x804100000000
+BAR0 (1 entries) and HDM_BASE (2 entries) must have the same comma-separated entry count
+root@ubuntu-L1:/home/nvidia# sudo HDM_BASE=0x200000000000 bash /root/host-shared/t414_hshub_c2c_program.sh
+BAR0 auto-discovered via 'lspci -vd 10de:37bf': 0x804100000000
+Skipping the coherent-test SPA read (0x2005fe1bf000) — it crashed SCSIM with a CHBM 'padr is too large' assert in bug 6528454 #34. Pass --with-coherent-test-read to attempt it anyway.
+===== gpu_0: BAR0=0x804100000000 HDM_BASE=0x200000000000 SPA_START=0x100000 SPA_END=0x100300 =====
+=== BEFORE HSHUB0 ===
+=== gpu0_BEFORE_HSHUB0: START END ENABLE CHILINK CXL_CFG ===
+0x00000000
+0x00000000
+0x00000000
+0x00000001
+0x00000000
+=== BEFORE HSHUB1 ===
+=== gpu0_BEFORE_HSHUB1: START END ENABLE CHILINK CXL_CFG ===
+0x00000000
+0x00000000
+0x00000000
+0x00000001
+0x00000000
+=== BEFORE HSHUB2 ===
+=== gpu0_BEFORE_HSHUB2: START END ENABLE CHILINK CXL_CFG ===
+0x00000000
+0x00000000
+0x00000000
+0x00000001
+0x00000000
+=== AFTER HSHUB0 ===
+=== gpu0_AFTER_HSHUB0: START END ENABLE CHILINK CXL_CFG ===
+0x00100000
+0x00100300
+0x00000001
+0x00000001
+0x00000000
+=== AFTER HSHUB1 ===
+=== gpu0_AFTER_HSHUB1: START END ENABLE CHILINK CXL_CFG ===
+0x00100000
+0x00100300
+0x00000001
+0x00000002
+0x00000001
+=== AFTER HSHUB2 ===
+=== gpu0_AFTER_HSHUB2: START END ENABLE CHILINK CXL_CFG ===
+0x00100000
+0x00100300
+0x00000001
+0x00000002
+0x00000001
+=== gpu0 C2C ROUND-TRIP: write 0x5a @ HDM base 0x200000000000, read back ===
+gpu0 readback=0x0000005A
+gpu0_C2C_ROUNDTRIP_RESULT=PASS
+=== SUMMARY: 1 GPU(s) tested, overall PASS ===
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RMBar2ApertureSizeMB=0x10;RmAllowIncompatibleHwSwVersion=1'
+============================================================
+ Rosa guest setup
+  VBIOS_FILE_PATH       = /root/host-shared/fn100_sim_hbm4.rom
+  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RMBar2ApertureSizeMB=0x10;RmAllowIncompatibleHwSwVersion=1
+============================================================
+[1/3] Disabling Init on Probe and nvidia-drm in /etc/modprobe.d/nvidia.conf
+      'options nvidia-drm modeset=0' already present, skipping
+      'options nvidia NVreg_GpuInitOnProbe=0' already present, skipping
+[2/3] Removing old NVIDIA kernel modules
+      nvidia_drm not loaded, skipping
+      nvidia_modeset not loaded, skipping
+      nvidia_uvm not loaded, skipping
+      rmmod nvidia
+      rmmod nvidia_vgpu_vfio
+[3/3] Staging VBIOS and reloading nvidia module
+      copied /root/host-shared/fn100_sim_hbm4.rom -> /lib/firmware/nvidia/fn100_sim_hbm4.rom
+      detected GPU: 0005:02:00.0
+      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RMBar2ApertureSizeMB=0x10;RmAllowIncompatibleHwSwVersion=1' \
+                       'NVreg_RegistryBinaryFilePerDevice=pci=0005:02:00.0;vbios=fn100_sim_hbm4.rom' \
+                       NVreg_EnableGpuFirmware=0 NVreg_RmMsg=':'
+============================================================
+ Rosa guest setup complete
+============================================================
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V &
+[1] 2420
+root@ubuntu-L1:/home/nvidia# ps aux | grep persist
+root        2420  0.0  0.0   2628  1008 pts/2    S    16:45   0:00 nvidia-persistenced -V
+root        2421 99.4  0.0   3412  1656 ?        Ss   16:45  32:27 nvidia-persistenced -V
+root        2440  0.0  0.0   6440  1796 pts/2    S+   17:18   0:00 grep --color=auto persist
+root@ubuntu-L1:/home/nvidia# ps aux | grep persist
+root        2420  0.0  0.0   2628  1008 pts/2    S    16:45   0:00 nvidia-persistenced -V
+root        2421 99.4  0.0   3412  1656 ?        Ss   16:45  32:27 nvidia-persistenced -V
+root        2442  0.0  0.0   6440  1776 pts/2    S+   17:18   0:00 grep --color=auto persist
+root@ubuntu-L1:/home/nvidia# ps aux | grep persist
+root        2420  0.0  0.0   2628  1008 pts/2    S    16:45   0:00 nvidia-persistenced -V
+root        2421 99.3  0.0   3412  1656 ?        Ss   16:45  32:27 nvidia-persistenced -V
+root        2444  0.0  0.0   6440  1796 pts/2    S+   17:18   0:00 grep --color=auto persist
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+^C
+root@ubuntu-L1:/home/nvidia# ps aux | grep persist
+root        2421 96.1  0.0   3412  1868 ?        Ss   16:50  33:12 nvidia-persistenced -V
+root        2460  0.0  0.0   6440  1792 pts/2    S+   17:25   0:00 grep --color=auto persist
+[1]+  Done                    nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+==============NVSMI LOG==============
+
+Timestamp                                              : Fri Aug 28 17:25:31 2026
+Driver Version                                         : 630.00 [Deprecated; will be removed in CUDA 14.0. Use KMD Version instead]
+CUDA Version                                           : 13.5 [Deprecated; will be removed in CUDA 14.0. Use CUDA UMD Version instead]
+KMD Version                                            : 630.00
+CUDA UMD Version                                       : 13.5
+
+Attached GPUs                                          : 1
+GPU 00000005:02:00.0
+    Product Name                                       : Graphics Device
+    Product Brand                                      : GeForce
+    Product Architecture                               : Feynman
+    Display Mode                                       : Requested functionality has been deprecated
+    Display Attached                                   : No
+    Display Active                                     : Disabled
+    Persistence Mode                                   : Enabled
+    Addressing Mode                                    : None
+    MIG Mode
+        Current                                        : Disabled
+        Pending                                        : Disabled
+    Accounting Mode                                    : Disabled
+    Accounting Mode Buffer Size                        : 4000
+    Driver Model
+        Current                                        : N/A
+        Pending                                        : N/A
+    Serial Number                                      : N/A
+    GPU UUID                                           : GPU-ed3af8ce-9c0d-5dfc-a0f9-05cd60588edb
+    GPU PDI                                            : 0x0
+    Minor Number                                       : 0
+    VBIOS Version                                      : 9C.00.00.00.03
+    MultiGPU Board                                     : No
+    Board ID                                           : 0x50200
+    Board Part Number                                  : N/A
+    GPU Part Number                                    : 37BF-000-A1
+    FRU Part Number                                    : N/A
+    Platform Info
+        Chassis Serial Number                          : 
+        Slot Number                                    : 0
+        Tray Index                                     : 0
+        Host ID                                        : 1
+        Peer Type                                      : Direct Connected
+        Module Id                                      : 1
+        GPU Fabric GUID                                : 0x0000000000000000
+    Inforom Version
+        Image Version                                  : N/A
+        OEM Object                                     : N/A
+        ECC Object                                     : N/A
+        Power Management Object                        : N/A
+    Inforom BBX Object Flush
+        Latest Timestamp                               : N/A
+        Latest Duration                                : N/A
+    Inforom Time Data
+        Time Run                                       : N/A
+    GPU Uptime                                         : 2069 seconds
+    GPU Operation Mode
+        Current                                        : N/A
+        Pending                                        : N/A
+    GPU C2C Mode                                       : Enabled
+    GPU Virtualization Mode
+        Virtualization Mode                            : None
+        Host VGPU Mode                                 : N/A
+        vGPU Heterogeneous Mode                        : N/A
+    GPU Recovery Action                                : None
+    GSP Firmware Version                               : N/A
+    IBMNPU
+        Relaxed Ordering Mode                          : N/A
+    PCI
+        Bus                                            : 0x02
+        Device                                         : 0x00
+        Domain                                         : 0x0005
+        Base Classcode                                 : 0x3
+        Sub Classcode                                  : 0x2
+        Device Id                                      : 0x37BF10DE
+        Bus Id                                         : 00000005:02:00.0
+        Sub System Id                                  : 0x00000000
+        GPU Link Info
+            PCIe Generation
+                Max                                    : 1
+                Current                                : 1
+                Device Current                         : 1
+                Device Max                             : 1
+                Host Max                               : 6
+            Link Width
+                Max                                    : 16x
+                Current                                : 1x
+        Bridge Chip
+            Type                                       : N/A
+            Firmware                                   : N/A
+        Replays Since Reset                            : 0
+        Replay Number Rollovers                        : 0
+        Tx Throughput                                  : 0 KB/s
+        Rx Throughput                                  : 0 KB/s
+        Atomic Caps Outbound                           : N/A
+        Atomic Caps Inbound                            : FETCHADD_32 FETCHADD_64 SWAP_32 SWAP_64 CAS_32 CAS_64 
+    Fan Speed                                          : N/A
+    Performance State                                  : N/A
+    Clocks Event Reasons                               : Unknown Error
+    Clocks Event Reasons Counters
+        SW Power Capping                               : Unknown Error
+        Sync Boost                                     : Unknown Error
+        SW Thermal Slowdown                            : Unknown Error
+        HW Thermal Slowdown                            : N/A
+        HW Power Braking                               : N/A
+    Sparse Operation Mode                              : N/A
+    FB Memory Usage
+        Total                                          : 24576 MiB
+        Reserved                                       : 96 MiB
+        Used                                           : 0 MiB
+        Free                                           : 24481 MiB
+    BAR1 Memory Usage
+        Total                                          : 256 MiB
+        Used                                           : 0 MiB
+        Free                                           : 256 MiB
+    Conf Compute Protected Memory Usage
+        Total                                          : 0 MiB
+        Used                                           : 0 MiB
+        Free                                           : 0 MiB
+    Compute Mode                                       : Default
+    Utilization
+        GPU                                            : 0 %
+        Memory                                         : 0 %
+        Encoder                                        : N/A
+        Decoder                                        : N/A
+        JPEG                                           : N/A
+        OFA                                            : N/A
+    Encoder Stats
+        Active Sessions                                : 0
+        Average FPS                                    : 0
+        Average Latency                                : 0
+    FBC Stats
+        Active Sessions                                : 0
+        Average FPS                                    : 0
+        Average Latency                                : 0
+    DRAM Encryption Mode
+        Current                                        : N/A
+        Pending                                        : N/A
+    ECC Mode
+        Current                                        : N/A
+        Pending                                        : N/A
+    ECC Errors
+        Volatile
+            SRAM Correctable                           : N/A
+            SRAM Uncorrectable Parity                  : N/A
+            SRAM Uncorrectable SEC-DED                 : N/A
+            DRAM Correctable                           : N/A
+            DRAM Uncorrectable                         : N/A
+        Aggregate
+            SRAM Correctable                           : N/A
+            SRAM Uncorrectable Parity                  : N/A
+            SRAM Uncorrectable SEC-DED                 : N/A
+            DRAM Correctable                           : N/A
+            DRAM Uncorrectable                         : N/A
+            SRAM Threshold Exceeded                    : N/A
+        Aggregate Uncorrectable SRAM Sources
+            SRAM L2                                    : N/A
+            SRAM SM                                    : N/A
+            SRAM Microcontroller                       : N/A
+            SRAM PCIE                                  : N/A
+            SRAM Other                                 : N/A
+        Channel Repair Pending                         : N/A
+        TPC Repair Pending                             : N/A
+        Unrepairable Memory                            : N/A
+    Retired Pages
+        Single Bit ECC                                 : N/A
+        Double Bit ECC                                 : N/A
+        Pending Page Blacklist                         : N/A
+    Remapped Rows                                      : N/A
+    Remapped Banks                                     : N/A
+    Temperature
+        GPU Current Temp                               : N/A
+        GPU Current Max Temp                           : N/A
+        GPU Current T.Limit Temp                       : N/A
+        GPU Shutdown Temp                              : N/A
+        GPU Slowdown Temp                              : N/A
+        GPU Max Operating Temp                         : N/A
+        GPU Target Temperature Specification           : N/A
+        Memory Current Temp                            : N/A
+        Memory Max Operating Temp                      : N/A
+    GPU Power Readings
+        Average Power Draw                             : N/A
+        Instantaneous Power Draw                       : N/A
+        GPU Ceiling Power Limit
+            Current Power Limit                        : N/A
+            Requested Power Limit                      : N/A
+            Default Power Limit                        : N/A
+        GPU Base Power
+            Current Base Power                         : N/A
+            Requested Base Power                       : N/A
+            Default Base Power                         : N/A
+            Adaptive TGP Adjusted Base Power           : N/A
+        Min Power Limit                                : N/A
+        Max Power Limit                                : N/A
+    GPU Memory Power Readings 
+        Average Power Draw                             : N/A
+        Instantaneous Power Draw                       : N/A
+    Module Power Readings
+        Average Power Draw                             : N/A
+        Instantaneous Power Draw                       : N/A
+        Current Power Limit                            : N/A
+        Requested Power Limit                          : N/A
+        Default Power Limit                            : N/A
+        Min Power Limit                                : N/A
+        Max Power Limit                                : N/A
+    Power Smoothing                                    : N/A
+    Workload Power Profiles
+        Requested Profiles                             : N/A
+        Enforced Profiles                              : N/A
+    EDPp Multiplier                                    : N/A
+    Clocks
+        Graphics                                       : Unknown Error
+        SM                                             : Unknown Error
+        Memory                                         : Unknown Error
+        Video                                          : Unknown Error
+    Applications Clocks
+        Graphics                                       : Requested functionality has been deprecated
+        Memory                                         : Requested functionality has been deprecated
+    Default Applications Clocks
+        Graphics                                       : Requested functionality has been deprecated
+        Memory                                         : Requested functionality has been deprecated
+    Deferred Clocks
+        Memory                                         : N/A
+    Max Clocks
+        Graphics                                       : Unknown Error
+        SM                                             : Unknown Error
+        Memory                                         : Unknown Error
+        Video                                          : Unknown Error
+    Max Customer Boost Clocks
+        Graphics                                       : N/A
+    Clock Policy
+        Auto Boost                                     : N/A
+        Auto Boost Default                             : N/A
+    DLA Clocks
+        Engine                                         : N/A
+        Max Engine                                     : N/A
+    Fabric
+        State                                          : N/A
+        Status                                         : N/A
+        CliqueId                                       : N/A
+        ClusterUUID                                    : N/A
+        Health
+            Summary                                    : N/A
+            Bandwidth                                  : N/A
+            Route Recovery in progress                 : N/A
+            Route Unhealthy                            : N/A
+            Access Timeout Recovery                    : N/A
+            Incorrect Configuration                    : N/A
+            Partition Assigned                         : N/A
+            Global Fabric Manager State                : N/A
+        Cliques                                        : 
+    GPU Persona                                        : N/A
+    Processes                                          : None
+    Capabilities
+        EGM                                            : enabled
+
+root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+initObject: Allocated RM object: client=c1d0000f, parent=c1d0000f, object=c1d0000f, class=41
+rmControl: client=c1d0000f, object=c1d0000f, cmd=214
+rmControl: client=c1d0000f, object=c1d0000f, cmd=215
+rmControl: client=c1d0000f, object=c1d0000f, cmd=202
+initObject: Allocated RM object: client=c1d0000f, parent=c1d0000f, object=aa000000, class=80
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=ab000000, class=2080
+ConstructVASpace: Allocating: bb000000 [90f1]
+ConstructVASpace: Allocation base = 0x100000, limit = 0x1ffffffffefffff
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=bb000000, class=90f1
+rmControl: client=c1d0000f, object=ab000000, cmd=20800170
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+rmControl: client=c1d0000f, object=ab000000, cmd=20800147
+rmControl: client=c1d0000f, object=ab000000, cmd=20801303
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00000, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00001, class=0
+CpuVirtMapping: Mapped to 0xffff84493000 [offset = 0x0, length = 0x400]
+GpuVirtMapping: client=c1d0000f, device=aa000000, virt=caf00001, phys=caf00000, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100000000 [offset = 0x0, length = 0x400]
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00002, class=0
+CpuVirtMapping: Mapped to 0xffff84492000 [offset = 0x0, length = 0x1000]
+rmControl: client=c1d0000f, object=ab000000, cmd=20800119
+rmControl: client=c1d0000f, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00003, class=0
+CpuVirtMapping: Mapped to 0xffff84491000 [offset = 0x0, length = 0x200]
+FermiChannelImpl: Allocating: (cc000000, cb6f, [caf00002, caf00001])
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=cc000000, class=cb6f
+FermiChannelImpl: ChID: 0x0, CID: 0x1
+rmControl: client=c1d0000f, object=ab000000, cmd=20800102
+rmControl: client=c1d0000f, object=ab000000, cmd=20801701
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf0000a, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf0000b, class=0
+CpuVirtMapping: Mapped to 0xffff83f80000 [offset = 0x0, length = 0x20000]
+GpuVirtMapping: client=c1d0000f, device=aa000000, virt=caf0000b, phys=caf0000a, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100010000 [offset = 0x0, length = 0x20000]
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf0000c, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf0000d, class=0
+CpuVirtMapping: Mapped to 0xffff83f60000 [offset = 0x0, length = 0x20000]
+GpuVirtMapping: client=c1d0000f, device=aa000000, virt=caf0000d, phys=caf0000c, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100030000 [offset = 0x0, length = 0x20000]
+Test seed = 0x6a91c48d
+Copy size = 131072 bytes
+Page size = big
+Source location = vidmem
+Destination location = vidmem
+Writting data to source mapping : 429213096 
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf0000e, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf0000f, class=0
+CpuVirtMapping: Mapped to 0xffff84490000 [offset = 0x0, length = 0x400]
+GpuVirtMapping: client=c1d0000f, device=aa000000, virt=caf0000f, phys=caf0000e, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100050000 [offset = 0x0, length = 0x400]
+rmControl: client=c1d0000f, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00010, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00011, class=0
+CpuVirtMapping: Mapped to 0xffff84464000 [offset = 0x0, length = 0x4]
+GpuVirtMapping: client=c1d0000f, device=aa000000, virt=caf00011, phys=caf00010, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100060000 [offset = 0x0, length = 0x4]
+rmControl: client=c1d0000f, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00012, class=0
+CpuVirtMapping: Mapped to 0xffff84463000 [offset = 0x0, length = 0x1000]
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000f, parent=aa000000, object=caf00013, class=0
+GpuVirtMapping: client=c1d0000f, device=aa000000, virt=caf00013, phys=caf00012, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100070000 [offset = 0x0, length = 0x1000]
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+initObject: Allocated RM object: client=c1d0000f, parent=cc000000, object=dd000000, class=c9b5
+rmControl: client=c1d0000f, object=cc000000, cmd=906f0101
+schedule: Channel: cc000000
+rmControl: client=c1d0000f, object=cc000000, cmd=906f0101
+flush: Writing GPFIFO entry: 0 (length=22, value = (70000, 5801))
+rmControl: client=c1d0000f, object=ab000000, cmd=20801701
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+rmControl: client=c1d0000f, object=ab000000, cmd=20800124
+RingDoorbell: Allocating usermode object for doorbell: ac000000 [type=c761]
+IProgressMarkerImpl: Marker created at addr 0xffff84490000 / 0x100050000
+flush: Writing GPFIFO entry: 1 (length=7, value = (70058, 1c01))
+rmControl: client=c1d0000f, object=ab000000, cmd=20801701
+IProgressMarkerImpl: Marker created at addr 0xffff84464000 / 0x100060000
+flush: Writing GPFIFO entry: 2 (length=6, value = (70074, 1801))
+rmControl: client=c1d0000f, object=ab000000, cmd=20801701
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=cc000000, object=dd000000, class=c9b5
+~GpuVirtMapping: Unmapped GPU memory 0x100070000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00013, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff84463000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00012, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100060000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00011, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff84464000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00010, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100050000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf0000f, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff84490000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf0000e, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100030000
+unmap
+unmap: Unmapped CPU memory at 0xffff83f60000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf0000d, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf0000c, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100010000
+unmap
+unmap: Unmapped CPU memory at 0xffff83f80000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf0000b, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf0000a, class=0
+~UserD: Destructing UserD ....
+unmap
+unmap: Unmapped CPU memory at 0xffff84491000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00003, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff84493000
+~GpuVirtMapping: Unmapped GPU memory 0x100000000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00001, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00000, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffff84492000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=caf00002, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=cc000000, class=cb6f
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=bb000000, class=90f1
+~Subdevice: Freeing usermode RM object: client=c1d0000f, parent=ab000000, object=ac000000
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=aa000000, object=ab000000, class=2080
+rmControl: client=c1d0000f, object=c1d0000f, cmd=216
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=c1d0000f, object=aa000000, class=80
+~IObjectImpl: Freeing RM object: client=c1d0000f, parent=c1d0000f, object=c1d0000f, class=41
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (124672 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (124673 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (124675 ms total)
+[  PASSED  ] 1 test.
+
+
+
+[Patch]
+
+root@dl325g11-2067:~/remote_fs/scratch/HW_TREE_NET_Rel3/TB600_tree/hw/nvmobile_tb50x_cmod_NET_Rel_3/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper# cat /tmp/claude-0/-root-SimX-
+agent-env-agent-env/025d7873-c74f-45ca-85c9-8b0b4bba1bf1/scratchpad/0001-ats-bdf-fix.patch
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joseph Jang <jjang@nvidia.com>
+Date: Fri, 28 Aug 2026 00:00:00 +0000
+Subject: [PATCH] scsim/gpu_wrapper: send the GPU's real requester BDF to the
+ MC instead of a hardcoded 0x100
+
+commlib_chi_transactor discarded the requester BDF the GPU puts on every
+gchi read/write request and passed a hardcoded 0x100 to the memory
+controller. Once the SMMU actually translates (ATS enabled, guest booted
+without iommu.passthrough=1) the MC rejects every GPU access:
+
+  MC READ ABORTED:  cgid=483, adr=0x1_0f958000, validity=NO_VIOLATIONS,
+                    req_valid=1, translation_err=1 (err 34 ERANGE)
+  MC WRITE ABORTED: cgid=484, adr=0x1_05368000, ... translation_err=1
+
+The read path swallows the error and returns 0xff filler; the write path
+routes through send_b_transport(), whose is_response_error() check raises
+SC_REPORT_ERROR and takes the whole simulator down with SIGSEGV.
+
+The GPU does send its BDF. hshub_gchi.cpp populate_gchi_req_attr_bdf(),
+guarded by NV_LITTER_ENABLE_ATS, packs it into the 16-bit bdf_reqattr
+field ("Send out bdf in the req_attr field to c2c") and is instantiated
+for all nine opcodes this transactor decodes -- gchi_read_{once,no_snp,
+unique} and gchi_write_{no_snp_ptl,no_snp_full,unique_ptl,unique_full,
+back_full,evict_full}. decode_read_req()/decode_write_req() simply never
+unpacked it.
+
+Because the GPU-side populate is behind a *compile*-time guard, this is
+inert on a passthrough boot (identity mapping, BDF unused), which is why
+it went unnoticed until ATS was switched on.
+
+Verified on rf_c1g2n2 (rosa + fn102 + GPU_C2C=true + C2C_ATS_ENABLE=true,
+RM 630.00 guest), single variable changed -- only this library differs:
+
+                            before      after
+  MC ABORTED                     2          0
+  send_read_request_to_mc        1         13
+  send_write_request_to_mc       1          2
+  sending ATS req                4         30
+  bdf on MC requests         0x100      0x200
+  RM channel test          SIGSEGV     PASSED (124.7 s)
+
+  NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+
+All 15 MC requests logged "addrType 0x0, bdf 0x200" (addrType 0 =
+ATS_SYSMEM). The run also gets much further than before, since
+previously the first transaction aborted and the second killed the sim.
+This confirms the MC resolves its translation context from gchi_bdf.
+
+Two caveats. The BDF is read as the low 16 bits of bdf_reqattr rather
+than BIT_UNPACKed via gchi_bdf, because that type lives in the GPU
+tree's generated xlitter headers and is not in this file's include
+scope; the layout was confirmed empirically (bdf 0x200 matches the BDF
+already printed on the ATS request). And those 16 bits are an overlay --
+under cxl_mode the GPU packs gchi_req_attr (kind/comptag/gfid) into the
+same field, so this path is only valid on non-CXL configs.
+
+The two cslDebug lines gain "bdf 0x%x" so the value is checkable
+straight from simout.txt.
+
+Not addressed here (separate defect): send_b_transport() turning any TLM
+error response into a fatal SC_REPORT_ERROR, while the read path ignores
+errors entirely. A rejected write should fail the transaction, not abort
+the simulator.
+---
+diff --git a/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.h b/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.h
+index b35a74d..8e93415 100644
+--- a/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.h
++++ b/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.h
+@@ -299,6 +299,11 @@ private:
+         uint32_t sec_sid      = 0;
+         bool     exp_comp_ack = false;
+         bool     order        = false;
++        // [ATS-BDF-FIX] requester BDF taken from the packet's bdf_reqattr
++        // field. Zero-init, NOT the legacy 0x100: that value aliases both GPUs
++        // onto one StreamID and is the defect this fix removes, so it must
++        // never be substituted silently.
++        uint32_t bdf          = 0;
+ 
+         // [DECODE-ON-RECV-v1] sc_fifo<T>::dump() unconditionally instantiates
+         // `os << m_buf[i]`, so any T used inside an sc_fifo MUST be ostream-
+@@ -341,6 +346,8 @@ private:
+         uint32_t sec_sid      = 0;
+         bool     exp_comp_ack = false;
+         bool     order        = false;  // unused for RD_UNIQUE (matches legacy)
++        // [ATS-BDF-FIX] see DecodedWriteReq::bdf above.
++        uint32_t bdf          = 0;
+ 
+         friend std::ostream& operator<<(std::ostream& os,
+                                         const DecodedReadReq& d) {
+diff --git a/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.cpp b/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.cpp
+index 1f583ac..1d344cf 100644
+--- a/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.cpp
++++ b/ip/socd/nv_top/4.0/cmod/nv_top/scsim/gpu_wrapper/commlib_chi_transactor.cpp
+@@ -401,6 +401,41 @@ void commlib_chi_transactor::request_processing_thread() {
+     }
+ }
+  
++// [ATS-BDF-FIX] Recover the GPU's requester BDF from a request packet.
++//
++// When the GPU fmodel is built with NV_LITTER_ENABLE_ATS it packs its BDF into
++// the 16-bit `bdf_reqattr` field of every gchi read/write request
++// (hshub_gchi.cpp populate_gchi_req_attr_bdf(): "Send out bdf in the req_attr
++// field to c2c"; instantiated for all 3 read + 6 write opcodes this file
++// decodes). This transactor previously discarded that field and passed a
++// hardcoded 0x100 to the MC, so every ATS-translated access was attributed to
++// the wrong requester -- benign under iommu.passthrough=1 (identity mapping,
++// BDF unused) but not once the SMMU actually translates.
++//
++// NOTE: those 16 bits are an overlay. Under cxl_mode the GPU packs
++// gchi_req_attr (kind/comptag/gfid) into the same field instead, so this must
++// only be used on non-CXL configs.
++//
++// The GPU packs a single 16-bit gchi_bdf field, so the raw value IS the BDF --
++// no BIT_UNPACK needed. Done this way deliberately: `gchi_bdf` lives in the
++// GPU tree's generated xlitter headers and is not in this file's include
++// scope, and depending on it would couple the transactor to that header set.
++// Self-checking at runtime: the cslDebug below prints this value, and it must
++// match the `BDF = ...` already printed on the ATS request for the same GPU.
++//
++// Deliberately NO fallback for a zero result. The obvious candidate, the
++// legacy 0x100, is not a safe default -- it is the reference-platform value
++// that aliases both GPUs (and the Mellanox function) onto StreamID 0x050100,
++// i.e. exactly the bug this fix removes. Substituting it would silently
++// reintroduce that failure while looking like the original defect. Pass
++// through what the GPU actually sent so a zero shows up as `bdf 0x0` in the
++// log and is diagnosable. (The GPU-side populate is guarded by a *compile*-
++// time NV_LITTER_ENABLE_ATS, so on an ATS-capable fmodel the field is always
++// populated -- no zero was observed across 15 MC requests on round11.)
++static inline uint32_t ats_bdf_from_reqattr(uint32_t reqattr_raw) {
++    return reqattr_raw & 0xFFFFu;
++}
++
+ // [DECODE-ON-RECV-v2] PKT_UNPACK the read request at receive time and copy
+ // every needed field into a plain-old-data struct that SCSIM owns. Same
+ // rationale as decode_write_req(): commlib's MQ RX buffer is recycled on the
+@@ -422,6 +457,8 @@ bool commlib_chi_transactor::decode_read_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_read_no_snp_ID: {
+@@ -436,6 +473,8 @@ bool commlib_chi_transactor::decode_read_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_read_unique_ID: {
+@@ -450,6 +489,8 @@ bool commlib_chi_transactor::decode_read_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         default:
+@@ -477,6 +518,8 @@ bool commlib_chi_transactor::decode_write_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_write_no_snp_full_ID: {
+@@ -491,6 +534,8 @@ bool commlib_chi_transactor::decode_write_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_write_unique_ptl_ID: {
+@@ -505,6 +550,8 @@ bool commlib_chi_transactor::decode_write_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_write_unique_full_ID: {
+@@ -519,6 +566,8 @@ bool commlib_chi_transactor::decode_write_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_write_back_full_ID: {
+@@ -533,6 +582,8 @@ bool commlib_chi_transactor::decode_write_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         case PKT_gchi_req_channel_ifc_gchi_write_evict_full_ID: {
+@@ -547,6 +598,8 @@ bool commlib_chi_transactor::decode_write_req(gchi_req_channel_ifc_t* req_pkt,
+             out.addr_type    = static_cast<uint32_t>(p.addrtype.raw());
+             out.nse          = static_cast<uint32_t>(p.nse.raw());
+             out.sec_sid      = static_cast<uint32_t>(p.sec_sid.raw());
++            out.bdf          = ats_bdf_from_reqattr(
++                                   static_cast<uint32_t>(p.bdf_reqattr.raw()));
+             return true;
+         }
+         default:
+@@ -1106,7 +1159,7 @@ void commlib_chi_transactor::send_read_request_to_mc(const DecodedReadReq& req)
+     uint32_t addrType   = req.addr_type;
+     //max bytes read can be 256 bytes
+     uint8_t  data[256]  = {0};
+-    uint32_t bdf        = 0x100;
++    uint32_t bdf        = req.bdf;   // [ATS-BDF-FIX] was hardcoded 0x100
+     uint32_t nse        = req.nse;
+     uint32_t sec_sid    = req.sec_sid;
+ 
+@@ -1131,7 +1184,7 @@ void commlib_chi_transactor::send_read_request_to_mc(const DecodedReadReq& req)
+     rd_gchi_ext->reset();
+ 
+     cslDebug((55, "address=%llx, size=%x, opcode=%x, txnId=%x, expCompAck=%x, order=%x\n", address, size, opcode, txnId, expCompAck, order));
+-    cslDebug((55, "nse 0x%x, sec_sid 0x%x, addrType 0x%x\n", nse, sec_sid, addrType));
++    cslDebug((55, "nse 0x%x, sec_sid 0x%x, addrType 0x%x, bdf 0x%x\n", nse, sec_sid, addrType, bdf));
+ 
+     //create tlm packet with nv_chi extension
+     uint32_t gpuRdCGID = 483;
+@@ -1785,7 +1838,7 @@ void commlib_chi_transactor::send_write_request_to_mc(const DecodedWriteReq& req
+     uint32_t expCompAck = req.exp_comp_ack ? 1u : 0u;
+     uint32_t order      = req.order        ? 1u : 0u;
+     uint32_t addrType   = req.addr_type;
+-    uint32_t bdf        = 0x100;
++    uint32_t bdf        = req.bdf;   // [ATS-BDF-FIX] was hardcoded 0x100
+     uint32_t nse        = req.nse;
+     uint32_t sec_sid    = req.sec_sid;
+ 
+@@ -1833,7 +1886,7 @@ void commlib_chi_transactor::send_write_request_to_mc(const DecodedWriteReq& req
+             gp_byte_en[i] = TLM_BYTE_DISABLED; //Note, this is 0x0
+         }
+     }
+-    cslDebug((55, "nse 0x%x, sec_sid 0x%x, addrType 0x%x\n", nse, sec_sid, addrType));
++    cslDebug((55, "nse 0x%x, sec_sid 0x%x, addrType 0x%x, bdf 0x%x\n", nse, sec_sid, addrType, bdf));
+  
+     //create tlm packet with nv_chi extension
+     uint32_t gpuWrCGID = 484;
+-- 
+2.34.1
+
+
+
+  bash runs/rf_c1g2n2/deploy.sh --revert-from prepare_base_image
+  bash runs/rf_c1g2n2/deploy.sh --revert download_hotfix_libs
+  bash runs/rf_c1g2n2/deploy.sh --resume \
+    --set NIC_FN=false --set GPU_USE_BDF_VALUE=per_gpu \
+    --set GPU_COUNT=1 --set GPU_BRIDGE_NIC_COUNT=1 \
+    --set GPU_GUEST_BDFS="0005:02:00.0" \
+    --set HGX_GUEST_IMAGE_NAME=HGX-L1-GUEST_ROSA_63000.img \
+    --set HGX_GUEST_IMAGE_FN102_SHA256="" \
+    --set C2C_ATS_ENABLE=true \
+    --set HOTFIX_LIBS_LOCAL_DIR=/root/SimX/scsim_hotfix_test/round11

@@ -17,7 +17,7 @@
     * https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3698839
     * PCIe C4 LIC IRQ enable + GPU 0 on PCIe C4 PCORE SID and TBU config
     (reference patch: https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3680369 and https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3475396/5)
-    * NVBug https://nvbugspro.nvidia.com/bug/6419452 to push read GPU config in bootwrapper to support 2 GPUs in PCORE4 for RF project
+    * NVBug https://nvbugspro.nvidia.com/bug/6419452?commentNumber=33 to push read GPU config in bootwrapper to support 2 GPUs in PCORE4 for RF project
 
 ## UEFI patch:
     * https://git-master.nvidia.com/r/c/tegra/bootloader/uefi/edk2-nvidia-tb500/+/3631534
@@ -30,4 +30,7 @@
 ## C2C frontdoor issue - https://nvbugspro.nvidia.com/bug/6528454 - need to program GPU HSHUB register to enable C2C frondoor path
 
 ## GPU UUID issue - https://nvbugspro.nvidia.com/bug/6670032
+
+## RM driver release problem - https://nvbugspro.nvidia.com/bug/6678421
+
 
