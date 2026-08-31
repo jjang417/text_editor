@@ -1,40 +1,13 @@
 
+[ATS disabled]
+root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
 
 
-## scsim_wrapper: https://gitlab-master.nvidia.com/systemsim/next/scsim-wrapper/-/merge_requests/27
-
-## gpu_devproc: https://gitlab-master.nvidia.com/systemsim/next/devproc/-/merge_requests/54
-
-## SimX TCX10: https://git-nbu.nvidia.com/r/q/topic:%22PCIe+bridge%22
-
-## weaver: https://gitlab-master.nvidia.com/systemsim/weaver/-/merge_requests/181
-
-## Rosa Feynman artifact: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/
-
-## SimX repo: https://nvidia.atlassian.net/wiki/spaces/SW/pages/2899075123/SimX+NIC+Creating+dgx+container
-
-## Bootloader patch:
-    * https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3698839
-    * PCIe C4 LIC IRQ enable + GPU 0 on PCIe C4 PCORE SID and TBU config
-    (reference patch: https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3680369 and https://git-master.nvidia.com/r/c/tegra/bootloader/bootwrapper/+/3475396/5)
-    * NVBug https://nvbugspro.nvidia.com/bug/6419452?commentNumber=33 to push read GPU config in bootwrapper to support 2 GPUs in PCORE4 for RF project
-
-## UEFI patch:
-    * https://git-master.nvidia.com/r/c/tegra/bootloader/uefi/edk2-nvidia-tb500/+/3631534
-
-## SCSIM TB600 patch for C2C frontdoor path: https://p4hw-swarm.nvidia.com/reviews/105638821?v=1 + https://p4hw-swarm.nvidia.com/reviews/105489044/v1/
-    - hotfix libs @ https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/scsim/c2c_hotfix_lib/
-
-## SCSIM commlib_chi_transactor patch to support 2nd GPU ATS: https://p4hw-swarm.nvidia.com/reviews/104612797?v=,3
-
-## C2C frontdoor issue - https://nvbugspro.nvidia.com/bug/6528454 - need to program GPU HSHUB register to enable C2C frondoor path
-
-## GPU UUID issue - https://nvbugspro.nvidia.com/bug/6670032
-
-## RM driver release problem - https://nvbugspro.nvidia.com/bug/6678421
+sudo bash /root/host-shared/t414_hshub_c2c_program.sh
 
 
-## acos test failure on C2C coherent mode:
+## for single GPU case:
+    sudo HDM_BASE=0x200000000000 bash /root/host-shared/t414_hshub_c2c_program.sh
 
 
 sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RMBar2ApertureSizeMB=0x10;RmAllowIncompatibleHwSwVersion=1'
@@ -43,7 +16,10 @@ root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
 root@ubuntu-L1:/home/nvidia# nvidia-smi -q
 
 
-[CUDA acos log]
+
+
+
+CUDA acos log:
 root@ubuntu-L1:/home/nvidia# sudo mkdir -p /var/tmp/acos
 root@ubuntu-L1:/home/nvidia# sudo cp -r /root/host-shared/cuda_test/tests/runtime/acos/. /var/tmp/acos/
 root@ubuntu-L1:/home/nvidia# cd /var/tmp/acos/
@@ -75,7 +51,8 @@ EE: (thread id 281473011480640)cuda/src/cui/cuilogs.c:700:cuiLogsReportApiError 
 !!!! Stream Creation failed with error out of memory
 
 
-[Kernel log]
+
+Kernel log:
 nvidia@ubuntu-L1:~$ sudo dmesg | grep -nE 'allocateEngine|Nv01AllocObject|NV_ERR|insufficient|nvAssertFailed' | tail -40
 1417:[ 3505.791404] NVRM: GPU0 nvAssertFailedNoLog: Assertion failed: memdescGetContiguity(pMemDesc, AT_CPU) @ kern_bus_gh100.c:1429
 1419:[ 3505.791429] NVRM: GPU0 nvAssertOkFailedNoLog: Assertion failed: Ran out of a critical resource, other than memory [NV_ERR_INSUFFICIENT_RESOURCES] (0x0000001A) returned from kgrctxInitSubctxHeader_HAL(pGpu, pKernelGraphicsContext, pSubctxHdrMemDesc, ctxBufVa, vaddr) @ kernel_graphics_context.c:4708
@@ -94,5 +71,3 @@ nvidia@ubuntu-L1:~$ sudo dmesg | grep -nE 'allocateEngine|Nv01AllocObject|NV_ERR
 In coherent mode RM maps the GR subcontext header through the GH100 static coherent-FB kernel mapping, which cannot map discontiguous surfaces — hence memdescGetContiguity(pMemDesc, AT_CPU) failing and NV_ERR_INSUFFICIENT_RESOURCES surfacing as CUDA's "out of memory". With EnableNUMA: 0 that path is forced and no regkey relaxes it. acos cannot pass in this mode, by design of the limitation, not because of anything in your tray.
 
 The subctx header allocated (discontiguous, as it apparently always is) → coherent mode routes its CPU map through the static path → memdescGetContiguity(pMemDesc, AT_CPU) false → NV_ERR_NOT_SUPPORTED → remapped upward to NV_ERR_INSUFFICIENT_RESOURCES → CUDA reports out-of-memory.
-
-
