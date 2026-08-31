@@ -173,13 +173,13 @@ Fixed by GPU Devproc.cpp with 64 bit BAR programming.
 
 RM load command:
 
-root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99'
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99'
 
-root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
 
 Next to try:
 
-sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1;RMExecuteDevinitOnPmu=0'
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=2;RmAllowIncompatibleHwSwVersion=1;RMExecuteDevinitOnPmu=0'
 
 
 
@@ -216,11 +216,11 @@ http://dvstransfer.nvidia.com/dvsshare/dvs-binaries/gpu_drv_chips_Debug_Linux_aa
 Old version GPU fn102 model:
 /home/fsf/fmodel/fn102/Linux_x86_64/103144419/
 
-root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
+root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
 ============================================================
  Rosa guest setup
   VBIOS_FILE_PATH       = /root/host-shared/fn100_sim_hbm4.rom
-  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1
+  NVREG_REGISTRY_DWORDS = RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1
 ============================================================
 [1/3] Disabling Init on Probe and nvidia-drm in /etc/modprobe.d/nvidia.conf
       'options nvidia-drm modeset=0' already present, skipping
@@ -235,7 +235,7 @@ root@ubuntu-L1:/home/nvidia# sudo bash /root/host-shared/rosa_guest_setup.sh 'RM
       copied /root/host-shared/fn100_sim_hbm4.rom -> /lib/firmware/nvidia/fn100_sim_hbm4.rom
       detected GPU: 0005:02:00.0
       detected GPU: 0005:82:00.0
-      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1' \
+      modprobe nvidia 'NVreg_RegistryDwords=RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1' \
                        'NVreg_RegistryBinaryFilePerDevice=pci=0005:02:00.0;vbios=fn100_sim_hbm4.rom;pci=0005:82:00.0;vbios=fn100_sim_hbm4.rom' \
                        NVreg_EnableGpuFirmware=0 NVreg_RmMsg=':'
 ============================================================

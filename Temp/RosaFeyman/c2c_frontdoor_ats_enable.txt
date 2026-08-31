@@ -978,3 +978,321 @@ index 1f583ac..1d344cf 100644
     --set HGX_GUEST_IMAGE_FN102_SHA256="" \
     --set C2C_ATS_ENABLE=true \
     --set HOTFIX_LIBS_LOCAL_DIR=/root/SimX/scsim_hotfix_test/round11
+
+
+
+[New Regkey for C2C init]
+AI Agen find RMBar2ApertureSizeMB=0x10 to minimize the RM BAR2 init size to 16M
+
+[ATS disabled]
+root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
+
+
+sudo bash /root/host-shared/t414_hshub_c2c_program.sh
+
+
+## for single GPU case:
+    sudo HDM_BASE=0x200000000000 bash /root/host-shared/t414_hshub_c2c_program.sh
+
+
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RMBar2ApertureSizeMB=0x10;RmAllowIncompatibleHwSwVersion=1'
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+
+
+[ATS enabled]
+root@ubuntu-L1:/home/nvidia# sudo sysctl -w kernel.watchdog_thresh=0
+
+
+sudo bash /root/host-shared/t414_hshub_c2c_program.sh
+
+
+## for single GPU case:
+    sudo HDM_BASE=0x200000000000 bash /root/host-shared/t414_hshub_c2c_program.sh
+
+
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDevinitDmaUseSPA=0x1;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x1;RmOverrideNonPasidAtsSupport=0x1;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmOverrideC2CLinks=0x3FFF;RmOverrideCoherentCpuFbBase=0x2000;RMBar2ApertureSizeMB=0x10;RmAllowIncompatibleHwSwVersion=1'
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+
+Normal CE test:
+
+./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+
+root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from NoClientAllocTSG/ChannelTest
+[ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+initObject: Allocated RM object: client=c1d0000e, parent=c1d0000e, object=c1d0000e, class=41
+rmControl: client=c1d0000e, object=c1d0000e, cmd=214
+rmControl: client=c1d0000e, object=c1d0000e, cmd=215
+rmControl: client=c1d0000e, object=c1d0000e, cmd=202
+initObject: Allocated RM object: client=c1d0000e, parent=c1d0000e, object=aa000000, class=80
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=ab000000, class=2080
+ConstructVASpace: Allocating: bb000000 [90f1]
+ConstructVASpace: Allocation base = 0x100000, limit = 0x1ffffffffefffff
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=bb000000, class=90f1
+rmControl: client=c1d0000e, object=ab000000, cmd=20800170
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+rmControl: client=c1d0000e, object=ab000000, cmd=20800147
+rmControl: client=c1d0000e, object=ab000000, cmd=20801303
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00000, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00001, class=0
+CpuVirtMapping: Mapped to 0xffffb1dca000 [offset = 0x0, length = 0x400]
+GpuVirtMapping: client=c1d0000e, device=aa000000, virt=caf00001, phys=caf00000, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100000000 [offset = 0x0, length = 0x400]
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00002, class=0
+CpuVirtMapping: Mapped to 0xffffb1dc9000 [offset = 0x0, length = 0x1000]
+rmControl: client=c1d0000e, object=ab000000, cmd=20800119
+rmControl: client=c1d0000e, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00003, class=0
+CpuVirtMapping: Mapped to 0xffffb1dc8000 [offset = 0x0, length = 0x200]
+FermiChannelImpl: Allocating: (cc000000, cb6f, [caf00002, caf00001])
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=cc000000, class=cb6f
+FermiChannelImpl: ChID: 0x0, CID: 0x1
+rmControl: client=c1d0000e, object=ab000000, cmd=20800102
+rmControl: client=c1d0000e, object=ab000000, cmd=20801701
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf0000a, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf0000b, class=0
+CpuVirtMapping: Mapped to 0xffffb18b0000 [offset = 0x0, length = 0x20000]
+GpuVirtMapping: client=c1d0000e, device=aa000000, virt=caf0000b, phys=caf0000a, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100010000 [offset = 0x0, length = 0x20000]
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf0000c, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf0000d, class=0
+CpuVirtMapping: Mapped to 0xffffb1890000 [offset = 0x0, length = 0x20000]
+GpuVirtMapping: client=c1d0000e, device=aa000000, virt=caf0000d, phys=caf0000c, flags=10, flags2=0
+GpuVirtMapping: Mapped to 0x100030000 [offset = 0x0, length = 0x20000]
+Test seed = 0x6a92469d
+Copy size = 131072 bytes
+Page size = big
+Source location = vidmem
+Destination location = vidmem
+Writting data to source mapping : 1742630022 
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf0000e, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf0000f, class=0
+CpuVirtMapping: Mapped to 0xffffb1dc7000 [offset = 0x0, length = 0x400]
+GpuVirtMapping: client=c1d0000e, device=aa000000, virt=caf0000f, phys=caf0000e, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100050000 [offset = 0x0, length = 0x400]
+rmControl: client=c1d0000e, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00010, class=0
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00011, class=0
+CpuVirtMapping: Mapped to 0xffffb1d9b000 [offset = 0x0, length = 0x4]
+GpuVirtMapping: client=c1d0000e, device=aa000000, virt=caf00011, phys=caf00010, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100060000 [offset = 0x0, length = 0x4]
+rmControl: client=c1d0000e, object=ab000000, cmd=20800119
+PhysMemory
+determinePageShift
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00012, class=0
+CpuVirtMapping: Mapped to 0xffffb1d9a000 [offset = 0x0, length = 0x1000]
+GpuVirtMemory
+initObject: Allocated RM object: client=c1d0000e, parent=aa000000, object=caf00013, class=0
+GpuVirtMapping: client=c1d0000e, device=aa000000, virt=caf00013, phys=caf00012, flags=40010, flags2=0
+GpuVirtMapping: Mapped to 0x100070000 [offset = 0x0, length = 0x1000]
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+initObject: Allocated RM object: client=c1d0000e, parent=cc000000, object=dd000000, class=c9b5
+rmControl: client=c1d0000e, object=cc000000, cmd=906f0101
+schedule: Channel: cc000000
+rmControl: client=c1d0000e, object=cc000000, cmd=906f0101
+flush: Writing GPFIFO entry: 0 (length=22, value = (70000, 5801))
+rmControl: client=c1d0000e, object=ab000000, cmd=20801701
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+rmControl: client=c1d0000e, object=ab000000, cmd=20800124
+RingDoorbell: Allocating usermode object for doorbell: ac000000 [type=c761]
+IProgressMarkerImpl: Marker created at addr 0xffffb1dc7000 / 0x100050000
+flush: Writing GPFIFO entry: 1 (length=7, value = (70058, 1c01))
+rmControl: client=c1d0000e, object=ab000000, cmd=20801701
+IProgressMarkerImpl: Marker created at addr 0xffffb1d9b000 / 0x100060000
+flush: Writing GPFIFO entry: 2 (length=6, value = (70074, 1801))
+rmControl: client=c1d0000e, object=ab000000, cmd=20801701
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=cc000000, object=dd000000, class=c9b5
+~GpuVirtMapping: Unmapped GPU memory 0x100070000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00013, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffffb1d9a000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00012, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100060000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00011, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffffb1d9b000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00010, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100050000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf0000f, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffffb1dc7000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf0000e, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100030000
+unmap
+unmap: Unmapped CPU memory at 0xffffb1890000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf0000d, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf0000c, class=0
+~GpuVirtMapping: Unmapped GPU memory 0x100010000
+unmap
+unmap: Unmapped CPU memory at 0xffffb18b0000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf0000b, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf0000a, class=0
+~UserD: Destructing UserD ....
+unmap
+unmap: Unmapped CPU memory at 0xffffb1dc8000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00003, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffffb1dca000
+~GpuVirtMapping: Unmapped GPU memory 0x100000000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00001, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00000, class=0
+unmap
+unmap: Unmapped CPU memory at 0xffffb1dc9000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=caf00002, class=0
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=cc000000, class=cb6f
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=bb000000, class=90f1
+~Subdevice: Freeing usermode RM object: client=c1d0000e, parent=ab000000, object=ac000000
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=aa000000, object=ab000000, class=2080
+rmControl: client=c1d0000e, object=c1d0000e, cmd=216
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=c1d0000e, object=aa000000, class=80
+~IObjectImpl: Freeing RM object: client=c1d0000e, parent=c1d0000e, object=c1d0000e, class=41
+[       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (121544 ms)
+[----------] 1 test from NoClientAllocTSG/ChannelTest (121544 ms total)
+
+
+
+ATS tet:
+
+./RM/tests-Linux-aarch64/resman/channel --gtest_filter=*ATS* -v
+
+root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=*ATS* -v
+Note: Google Test filter = *ATS*
+[==========] Running 3 tests from 3 test suites.
+[----------] Global test environment set-up.
+[----------] 1 test from SysMemATS/ChannelATSTest
+[ RUN      ] SysMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0
+initObject: Allocated RM object: client=c1d00011, parent=c1d00011, object=c1d00011, class=41
+rmControl: client=c1d00011, object=c1d00011, cmd=1f0
+/dvs/p4/build/sw/dev/gpu_drv/chips_a/drivers/resman/tests/rmapi/channel/ChannelTest.cpp:1234: Skipped
+RM test-only code is not enabled
+~IObjectImpl: Freeing RM object: client=c1d00011, parent=c1d00011, object=c1d00011, class=41
+[  SKIPPED ] SysMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0 (7 ms)
+[----------] 1 test from SysMemATS/ChannelATSTest (7 ms total)
+
+[----------] 1 test from LocalVidMemATS/ChannelATSTest
+[ RUN      ] LocalVidMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0
+initObject: Allocated RM object: client=c1d00012, parent=c1d00012, object=c1d00012, class=41
+rmControl: client=c1d00012, object=c1d00012, cmd=1f0
+/dvs/p4/build/sw/dev/gpu_drv/chips_a/drivers/resman/tests/rmapi/channel/ChannelTest.cpp:1234: Skipped
+RM test-only code is not enabled
+~IObjectImpl: Freeing RM object: client=c1d00012, parent=c1d00012, object=c1d00012, class=41
+[  SKIPPED ] LocalVidMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0 (7 ms)
+[----------] 1 test from LocalVidMemATS/ChannelATSTest (7 ms total)
+
+[----------] 1 test from PeerVidMemATS/ChannelATSTest
+[ RUN      ] PeerVidMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0
+initObject: Allocated RM object: client=c1d00013, parent=c1d00013, object=c1d00013, class=41
+rmControl: client=c1d00013, object=c1d00013, cmd=1f0
+/dvs/p4/build/sw/dev/gpu_drv/chips_a/drivers/resman/tests/rmapi/channel/ChannelTest.cpp:1234: Skipped
+RM test-only code is not enabled
+~IObjectImpl: Freeing RM object: client=c1d00013, parent=c1d00013, object=c1d00013, class=41
+[  SKIPPED ] PeerVidMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0 (1 ms)
+[----------] 1 test from PeerVidMemATS/ChannelATSTest (2 ms total)
+
+[----------] Global test environment tear-down
+[==========] 3 tests from 3 test suites ran. (20 ms total)
+[  PASSED  ] 0 tests.
+[  SKIPPED ] 3 tests, listed below:
+[  SKIPPED ] SysMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0
+[  SKIPPED ] LocalVidMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0
+[  SKIPPED ] PeerVidMemATS/ChannelATSTest.ChannelAlloc_CeVirtualATS/0
+
+
+GPU fmod bug:
+
+crash after 2nd rund ATS RM Channel test by ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+
+
+Symptom: The 1st run RM Channel test pass, but 2nd round RM Channel test encounter GPU fmodel crash ...
+
+Guest OS console:
+    root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+    Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+    [==========] Running 1 test from 1 test suite.
+    [----------] Global test environment set-up.
+    [----------] 1 test from NoClientAllocTSG/ChannelTest
+    [ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+    ...
+    ~IObjectImpl: Freeing RM object: client=c1d0000e, parent=c1d0000e, object=aa000000, class=80
+    ~IObjectImpl: Freeing RM object: client=c1d0000e, parent=c1d0000e, object=c1d0000e, class=41
+    [       OK ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0 (121544 ms)
+    [----------] 1 test from NoClientAllocTSG/ChannelTest (121544 ms total)
+
+    root@ubuntu-L1:/home/nvidia# ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+    Note: Google Test filter = NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0
+    [==========] Running 1 test from 1 test suite.
+    [----------] Global test environment set-up.
+    [----------] 1 test from NoClientAllocTSG/ChannelTest
+    [ RUN      ] NoClientAllocTSG/ChannelTest.ChannelAlloc_CeVirtual/0
+    ...
+    flush: Writing GPFIFO entry: 2 (length=6, value = (70074, 1801))
+    rmControl: client=c1d00011, object=ab000000, cmd=20801701
+    ~IObjectImpl: Freeing RM object: client=c1d00011, parent=cc000000, object=dd000000, class=c9b5
+    ~GpuVirtMapping: Unmapped GPU memory 0x100070000
+    ~IObjectImpl: Freeing RM object: client=c1d00011, parent=aa000000, object=caf00013, class=0
+    unmap
+    unmap: Unmapped CPU memory at 0xffff90e07000
+    ~IObjectImpl: Freeing RM object: client=c1d00011, parent=aa000000, object=caf00012, class=0
+
+
+
+GPU log:
+The subid pool is 13-bit (8192, 0x0000–0x1FFF), but the ATS ack path returns only 12 bits.
+ 
+  15751545  ATSD request allocated subid=0x19f9   <- 13-bit value
+  15751545  Sent ATSD packet on hnic2xbar_fold port=0
+  15751548  Received ATSD response ... subid=0x009f9   <- bit 12 dropped
+  15751548  assert -> deref end() -> SIGSEGV
+  ...
+  AssertMsg: [ nvclk=6477640 . . hshub_gchi.cpp 5757 ]  < failed assert is '(iterator != hshub2memsys_req_struct_subid_tracker_map[port].end())' > Received an unexpected packet(with subid=0x9f9) on port=0
+  AssertMsg: [ nvclk=6477640 . . hshub_gchi.cpp 5757 ]  # < Stack trace - [stack:1:32:1] (trim_end:show_max:trim_top) - 20 frames pre-trimmed > :
+
+
+  And this is what actually explains the "second run" mystery, which none of my earlier theories did:
+
+  - RM Channel test run 1 ATSD subids: 0x116 … 0x42a — all ≤ 0xFFF, so truncation is a no-op and all 14 responses match.
+  - RM Channel test run 2 ATSD subids: 0x19f9, 0x19fa — the first ones ≥ 0x1000, so the response comes back truncated and misses.
+
+Analysis:
+  From defs/projects.spec:3554:  #define NV_LITTER_ATSD_HSHUB_SUBID_BITWIDTH 12
+
+  The chain:
+
+  1. hshub allocates ATSD subid 0x19f9 (13-bit pool, 0x0000–0x1FFF) and keys its tracker on it <— this is the bug begin here ....
+  2. hshub transmits xx2mem_atsd_cmd with subid=0x019f9 <— bug: incorrect subid bit width (13 bits)
+  3. The ATSD responder replies mem2xx_ack_cmd with subid=0x009f9 <— correct allocation: bit 12 masked off
+  4. process_memsys2hsh_ats_request() looks up 0x9f9, misses <— correct behaviour given bad input
+  5. The accessor asserts, then dereferences end() → SIGSEGV crash
+
