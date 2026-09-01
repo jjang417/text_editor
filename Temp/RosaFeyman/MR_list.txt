@@ -29,6 +29,39 @@
 
 ## C2C frontdoor issue - https://nvbugspro.nvidia.com/bug/6528454 - need to program GPU HSHUB register to enable C2C frondoor path
 
+## 2nd run RM Channel test fail on C2C ATS enabled -
+
+
+GPU log:
+The subid pool is 13-bit (8192, 0x0000–0x1FFF), but the ATS ack path returns only 12 bits.
+ 
+  15751545  ATSD request allocated subid=0x19f9   <- 13-bit value
+  15751545  Sent ATSD packet on hnic2xbar_fold port=0
+  15751548  Received ATSD response ... subid=0x009f9   <- bit 12 dropped
+  15751548  assert -> deref end() -> SIGSEGV
+  ...
+  AssertMsg: [ nvclk=6477640 . . hshub_gchi.cpp 5757 ]  < failed assert is '(iterator != hshub2memsys_req_struct_subid_tracker_map[port].end())' > Received an unexpected packet(with subid=0x9f9) on port=0
+  AssertMsg: [ nvclk=6477640 . . hshub_gchi.cpp 5757 ]  # < Stack trace - [stack:1:32:1] (trim_end:show_max:trim_top) - 20 frames pre-trimmed > :
+
+
+  And this is what actually explains the "second run" mystery, which none of my earlier theories did:
+
+  - RM Channel test run 1 ATSD subids: 0x116 … 0x42a — all ≤ 0xFFF, so truncation is a no-op and all 14 responses match.
+  - RM Channel test run 2 ATSD subids: 0x19f9, 0x19fa — the first ones ≥ 0x1000, so the response comes back truncated and misses.
+
+Analysis:
+  From defs/projects.spec:3554:  #define NV_LITTER_ATSD_HSHUB_SUBID_BITWIDTH 12
+
+  The chain:
+
+  1. hshub allocates ATSD subid 0x19f9 (13-bit pool, 0x0000–0x1FFF) and keys its tracker on it <— this is the bug begin here ....
+  2. hshub transmits xx2mem_atsd_cmd with subid=0x019f9 <— bug: incorrect subid bit width (13 bits)
+  3. The ATSD responder replies mem2xx_ack_cmd with subid=0x009f9 <— correct allocation: bit 12 masked off
+  4. process_memsys2hsh_ats_request() looks up 0x9f9, misses <— correct behaviour given bad input
+  5. The accessor asserts, then dereferences end() → SIGSEGV crash
+
+
+
 ## GPU UUID issue - https://nvbugspro.nvidia.com/bug/6670032
 
 ## RM driver release problem - https://nvbugspro.nvidia.com/bug/6678421
