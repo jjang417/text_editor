@@ -967,17 +967,23 @@ index 1f583ac..1d344cf 100644
 2.34.1
 
 
-
+[Redeploy command]
   bash runs/rf_c1g2n2/deploy.sh --revert-from prepare_base_image
   bash runs/rf_c1g2n2/deploy.sh --revert download_hotfix_libs
+  rm -f /tmp/weaver/rf_c1g2n2/share/tray_images/HGX-L1-GUEST-CT_0.img
   bash runs/rf_c1g2n2/deploy.sh --resume \
     --set NIC_FN=false --set GPU_USE_BDF_VALUE=per_gpu \
     --set GPU_COUNT=1 --set GPU_BRIDGE_NIC_COUNT=1 \
     --set GPU_GUEST_BDFS="0005:02:00.0" \
-    --set HGX_GUEST_IMAGE_NAME=HGX-L1-GUEST_ROSA_63000.img \
-    --set HGX_GUEST_IMAGE_FN102_SHA256="" \
-    --set C2C_ATS_ENABLE=true \
-    --set HOTFIX_LIBS_LOCAL_DIR=/root/SimX/scsim_hotfix_test/round11
+    --set C2C_ATS_ENABLE=true
+
+
+cd /root/SimX/weaver
+  rm -f /tmp/weaver/rf_c1g2n2/share/tray_images/HGX-L1-GUEST-CT_0.img
+  bash runs/rf_c1g2n2/deploy.sh \
+      --set NIC_FN=false --set GPU_USE_BDF_VALUE=per_gpu \
+      --set GPU_COUNT=1 --set GPU_BRIDGE_NIC_COUNT=1 \
+      --set C2C_ATS_ENABLE=true
 
 
 
