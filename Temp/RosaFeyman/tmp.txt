@@ -1893,3 +1893,17 @@ Normal CE test:
 
 ./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
 
+
+[dGPU mode]
+
+sudo bash /root/host-shared/rosa_guest_setup.sh 'RMDisableAcr=0x1;RmPowerFeature=0x55555555;RMPowerFeature2=0x55555555;RMNvLinkControl=0x1;EnableMSI=0;RmDefaultTimeout=0x10000;RmPmuBootstrapMode=0x1;RmOverrideSelfHostedMode=0x0;RMFailOnC2CAbsence=0;RmOverrideC2CLinks=0x0;RmDisableCtxswUcodeFromChiplib=1;RMForceNetlistNumber=99;RmAllowIncompatibleHwSwVersion=1'
+
+root@ubuntu-L1:/home/nvidia# nvidia-persistenced -V &
+root@ubuntu-L1:/home/nvidia# nvidia-smi -q
+
+
+Normal CE test:
+
+./RM/tests-Linux-aarch64/resman/channel --gtest_filter=NoClientAllocTSG*ChannelTest.ChannelAlloc_CeVirtual/0 -v
+
+

@@ -7,7 +7,7 @@
 
 ## SimX TCX10: https://git-nbu.nvidia.com/r/q/topic:%22PCIe+bridge%22
 
-## weaver: https://gitlab-master.nvidia.com/systemsim/weaver/-/merge_requests/181
+## weaver: https://gitlab-master.nvidia.com/systemsim/weaver/-/merge_requests/181 <== merged ...
 
 ## Rosa Feynman artifact: https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/
 
