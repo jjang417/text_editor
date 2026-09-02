@@ -40,4 +40,54 @@ Authenticating as: root
 Password:  
 ==== AUTHENTICATION COMPLETE === 
 
- 
+ # Use an official Ubuntu as a parent image
+FROM ubuntu:22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    vim wget gcc make openssl qemu-utils git \
+    tcl tcl-dev tk tk-dev libtcl8.6 libtk8.6 \
+    libnewt0.52 \
+    libreadline-dev \
+    software-properties-common \
+    openssh-client \
+    python3-pip \
+    sshpass \
+    cmake doxygen rabbitmq-server git-lfs \
+    ninja-build libpixman-1-dev meson flex \
+    bison libcap-ng-dev libattr1-dev pkg-config \
+    libglib2.0-dev libncurses5 libslirp-dev ovmf \
+    libsqlite3-dev libjsoncpp-dev \
+    tcsh iproute2 bridge-utils
+
+# Install pyserial
+RUN pip3 install pyserial
+
+# Troubleshooting steps
+# Problem #1: libreadline.so.7 not found
+RUN cp /lib/x86_64-linux-gnu/libreadline.so.8 /lib/x86_64-linux-gnu/libreadline.so.7
+
+# Problem #2: GLIBCXX_3.4.32 not found
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test && \
+    apt-get update && \
+    apt-get install -y gcc-9 libstdc++-9-dev libstdc++-13-dev
+
+# Problem #3: libpng12.so.0 not found
+RUN cp /usr/lib/x86_64-linux-gnu/libpng16.so.16 /usr/lib/x86_64-linux-gnu/libpng12.so.0
+
+# Create the directory and copy the TB500 simulator package
+RUN mkdir /sim
+RUN mkdir /sim/release_pkg_net16_vdk_c1
+
+# Set the working directory
+WORKDIR /sim/release_pkg_net16_vdk_c1
+
+# Go to the /sim/c1
+RUN cd /sim/release_pkg_net16_vdk_c1
+
+# Default command to run the c1_auto_run.sh script
+CMD ["bash", "/sim/release_pkg_net16_vdk_c1/c1_auto_run.sh"]
+
