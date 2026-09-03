@@ -22,7 +22,7 @@
 ## UEFI patch:
     * https://git-master.nvidia.com/r/c/tegra/bootloader/uefi/edk2-nvidia-tb500/+/3631534
 
-## SCSIM TB600 patch for C2C frontdoor path: https://p4hw-swarm.nvidia.com/reviews/105638821?v=1 + https://p4hw-swarm.nvidia.com/reviews/105489044/v1/
+## SCSIM TB600 patch for C2C frontdoor path: https://p4hw-swarm.nvidia.com/reviews/105638821?v=1 + https://p4hw-swarm.nvidia.com/reviews/105489044/v1/ (merged to TB600)
     - hotfix libs @ https://artifactory.nvidia.com/artifactory/sw-systemsim-generic-local/rf/scsim/c2c_hotfix_lib/
 
 ## SCSIM commlib_chi_transactor patch to support 2nd GPU ATS: https://p4hw-swarm.nvidia.com/reviews/104612797?v=,3
