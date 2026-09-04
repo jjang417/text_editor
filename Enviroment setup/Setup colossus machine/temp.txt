@@ -91,3 +91,14 @@ RUN cd /sim/release_pkg_net16_vdk_c1
 # Default command to run the c1_auto_run.sh script
 CMD ["bash", "/sim/release_pkg_net16_vdk_c1/c1_auto_run.sh"]
 
+
+
+# Setup ~/.netrc for Artifactory Access, replace <YOUR_USERNAME> and <YOUR_API_TOKEN> with above ones you get from above step.
+cat > ~/.netrc << 'EOF'
+machine artifactory.nvidia.com
+login jjang
+password cmVmdGtuOjAxOjE4MTM2MzA1Mzg6c3BkMVI3bWhCUEhqck9zaDJzSE9uRHNubW5v
+EOF
+
+# Set permissions (required!)
+chmod 600 ~/.netrc
