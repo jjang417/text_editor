@@ -1,0 +1,128 @@
+
+
+
+ Encoding of 32 bits plat_config:
+    
+    [11:0]   socket 0 bifurcation   (d915eed, not on HEAD)
+    [23:12]  socket 1 bifurcation   (d915eed, not on HEAD)
+    [26:24]  gpu0_pcore   (0..5)
+    [29:27]  gpu1_pcore   (0..5)
+    [30]     gpu_pcore_valid
+    [31]     reserved
+  
+  3 bits each is sufficient since TB500_PCIE_RC_CNT is 6. The valid bit is load-bearing: without it, "GPU0 on pcore 0" is indistinguishable from "field
+  never set", and boot.S:68 initializes the word to 0x00000000.
+
+
+ Firmware — include/btw/t41x_plat_config.h:
+ 
+  +#include <btw/bootcfg.h>
+  +
+  +/*
+  + * GPU pcore assignment carried in the boot header's plat_config word
+  + * (bootcfg_t offset 0x40), in the byte the bifurcation layout reserves
+  + * for SoC config flags:
+  + *
+  + *   [26:24] gpu0_pcore   [29:27] gpu1_pcore   [30] valid
+  + *
+  + * simtools patches the word into bootwrapper.bin at image-gen time, so a
+  + * board whose GPU enumerates on a non-standard controller no longer needs
+  + * a rebuild. The valid bit distinguishes "pcore 0" from "never set", so an
+  + * all-zero word keeps the historical plat-derived defaults below.
+  + */
+  +#define T410_GPU0_PCORE_FIELD        (0x7U << 24)
+  +#define T410_GPU1_PCORE_FIELD        (0x7U << 27)
+  +#define T410_GPU_PCORE_VALID         (0x1U << 30)
+  +
+   static inline void t410_get_gpu_pcores(uint32_t plat, uint32_t *gpu0_pcore, uint32_t *gpu1_pcore)
+   {
+  +     uint32_t cfg = PLAT_CONFIG;
+  +     uint32_t pcore;
+  + 
+        if ((plat == PLAT_SYSTEM_FPGA) || (plat == PLAT_QT)) {
+                *gpu0_pcore = 0U;
+                *gpu1_pcore = 1U;
+        } else {
+                *gpu0_pcore = 2U;
+                *gpu1_pcore = 5U;
+        }       
+        
+  +     /*      
+  +      * Runtime config wins over the build-time override: it is per-image
+  +      * and more specific. Each field is range-checked independently, so a
+  +      * garbage value falls back to the platform default rather than
+  +      * indexing chip_pcie() out of bounds.
+  +      */
+  +     if ((cfg & T410_GPU_PCORE_VALID) != 0U) {
+  +             pcore = FIELD_EXTRACT(T410_GPU0_PCORE_FIELD, cfg);
+  +             if (pcore < TB500_PCIE_RC_CNT) {
+  +                     *gpu0_pcore = pcore;
+  +             }       
+  +             pcore = FIELD_EXTRACT(T410_GPU1_PCORE_FIELD, cfg);
+  +             if (pcore < TB500_PCIE_RC_CNT) {
+  +                     *gpu1_pcore = pcore;
+  +             }       
+  +             return;
+  +     }
+  +
+        if (T410_GPU0_PCORE_OVERRIDE != 0xffU) {
+                *gpu0_pcore = T410_GPU0_PCORE_OVERRIDE;
+        }
+   }
+
+  simtools — image_gen.py:
+
+  # plat_config GPU pcore fields; must match T410_GPU*_PCORE_FIELD in
+  # bootwrapper include/btw/t41x_plat_config.h
+  GPU_PCORE_RC_CNT     = 6
+  GPU0_PCORE_SHIFT     = 24
+  GPU1_PCORE_SHIFT     = 27
+  GPU_PCORE_VALID_BIT  = 1 << 30
+
+  def encode_gpu_pcore(spec):
+      """Encode 'gpu0[,gpu1]' pcore indices into the plat_config word."""
+      parts = [p.strip() for p in spec.split(',') if p.strip()]
+      if not 1 <= len(parts) <= 2:
+          logger.error("--gpu_pcore: expected 'gpu0' or 'gpu0,gpu1', got '%s'", spec)
+          sys.exit(-1)
+
+      word = GPU_PCORE_VALID_BIT
+      for idx, (part, shift) in enumerate(zip(parts, (GPU0_PCORE_SHIFT, GPU1_PCORE_SHIFT))):
+          try:
+              pcore = int(part, 0)
+          except ValueError:
+              logger.error("--gpu_pcore: GPU%d value '%s' is not an integer", idx, part)
+              sys.exit(-1)
+          if not 0 <= pcore < GPU_PCORE_RC_CNT:
+              logger.error("--gpu_pcore: GPU%d pcore %d out of range (0..%d)",
+                           idx, pcore, GPU_PCORE_RC_CNT - 1)
+              sys.exit(-1)
+          word |= pcore << shift
+
+      # Only GPU0 given: leave GPU1 at 0, firmware keeps its platform default
+      # only if that field is out of range -- so mirror GPU0's default instead.
+      if len(parts) == 1:
+          word |= 5 << GPU1_PCORE_SHIFT
+      return word
+
+  In update_plat_info(), merged with the bifurcation write so both share the word:
+
+  +            plat_config = 0
+  +            if getattr(self.options, 'pcie_bifur', None):
+  +                plat_config |= encode_pcie_bifur(self.options.pcie_bifur)
+  +            if getattr(self.options, 'gpu_pcore', None):
+  +                plat_config |= encode_gpu_pcore(self.options.gpu_pcore)
+  +            if plat_config:
+  +                logger.debug("plat_config = 0x%08x", plat_config)
+  +                f.seek(plat_config_offset)
+  +                f.write(plat_config.to_bytes(4, byteorder='little'))
+
+  And in chip_class.py:add_args():
+
+  parser.add_argument('--gpu_pcore', default=None,
+                      help="GPU0[,GPU1] PCIe controller index (0..5), patched into the "
+                           "bootwrapper boot header plat_config at offset 0x40. "
+                           "Example: --gpu_pcore 4,5 for rf_c1g2n2/rosa+fn102.")
+
+
+
