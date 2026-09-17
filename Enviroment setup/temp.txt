@@ -4,4 +4,3 @@ sshfs jjang@dc2-sim-e24-095:/home/scratch.jjang_sw /home/jjang/remote_fs/scratch
 
 sshfs jjang@dc2-sim-e24-095:/home/scratch.jjang_sw_1 /home/jjang/remote_fs/scratch_1 
 
-
