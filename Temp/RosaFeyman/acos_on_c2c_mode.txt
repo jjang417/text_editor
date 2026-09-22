@@ -71,3 +71,28 @@ nvidia@ubuntu-L1:~$ sudo dmesg | grep -nE 'allocateEngine|Nv01AllocObject|NV_ERR
 In coherent mode RM maps the GR subcontext header through the GH100 static coherent-FB kernel mapping, which cannot map discontiguous surfaces — hence memdescGetContiguity(pMemDesc, AT_CPU) failing and NV_ERR_INSUFFICIENT_RESOURCES surfacing as CUDA's "out of memory". With EnableNUMA: 0 that path is forced and no regkey relaxes it. acos cannot pass in this mode, by design of the limitation, not because of anything in your tray.
 
 The subctx header allocated (discontiguous, as it apparently always is) → coherent mode routes its CPU map through the static path → memdescGetContiguity(pMemDesc, AT_CPU) false → NV_ERR_NOT_SUPPORTED → remapped upward to NV_ERR_INSUFFICIENT_RESOURCES → CUDA reports out-of-memory.
+
+
+
+After using your RM test build, I could pass CUDA acos test on System sim GPU coherent mode with C2C frontdoor path.
+ 
+❯ DD: (thread id 281473068558400)cuda/src/cui/stream_manager.c:334:streamBeginPushOnChannelWithFlags_UnderLock Updating beginPushCount to 555
+  args: x=-6.089192084e-24 (98eb9070)
+
+  @@@@ total errors: 0
+  args: x=-4.568189887e-27 (93b4f6f3)
+
+  @@@@ total errors: 0
+  args: x=-2.541283134e-31 (8ca4f04f)
+
+  @@@@ total errors: 0
+  args: x=-2.377417382e-13 (aa85d632)
+
+  @@@@ total errors: 0
+  args: x= 3.695669903e-08 (331eba52)
+
+  @@@@ total errors: 0
+  ^^^^ ulperr: [0]=5  [1]=0  [2]=0  [3]=0
+  &&&& acos test PASSED
+
+
