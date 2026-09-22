@@ -74,7 +74,7 @@ The subctx header allocated (discontiguous, as it apparently always is) → cohe
 
 
 
-After using your RM test build, I could pass CUDA acos test on System sim GPU coherent mode with C2C frontdoor path.
+After using your RM test build (from https://nvbugspro.nvidia.com/bug/6708602), I could pass CUDA acos test on System sim GPU coherent mode with C2C frontdoor path.
  
 ❯ DD: (thread id 281473068558400)cuda/src/cui/stream_manager.c:334:streamBeginPushOnChannelWithFlags_UnderLock Updating beginPushCount to 555
   args: x=-6.089192084e-24 (98eb9070)
