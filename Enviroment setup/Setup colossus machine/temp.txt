@@ -10,6 +10,10 @@
   ssh root@10.63.142.24 
   password: jjydl325g11-2067
 
+ <Grace machine>
+  ssh root@10.86.14.141
+  password: jjylego-c2g2-smc-055
+
 <Enable root user permission>
 root@dl325g11-2067:/localhome/local-jjang# cat /etc/ssh/sshd_config 
 
